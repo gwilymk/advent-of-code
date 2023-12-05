@@ -1,4 +1,4 @@
-use std::{fs, net, ops::Range};
+use std::{fs, ops::Range};
 
 fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
@@ -71,12 +71,6 @@ impl Almanac {
             .unwrap()
     }
 
-    fn seed_value(&self, seed: usize) -> usize {
-        self.maps
-            .iter()
-            .fold(seed, |value, map| map.get_value(value))
-    }
-
     fn seed_range(&self, seed_range: &Range<usize>) -> Vec<Range<usize>> {
         self.maps
             .iter()
@@ -115,6 +109,7 @@ impl Map {
         result
     }
 
+    #[cfg(test)]
     fn get_value(&self, item: usize) -> usize {
         for (offset_range, dest_start) in &self.offsets {
             if offset_range.contains(&item) {
