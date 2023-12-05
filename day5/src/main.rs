@@ -154,8 +154,6 @@ impl Map {
             }
         }
 
-        // println!("{:?}: {range:?}, {result:?}", offsets);
-
         assert_eq!(
             result.iter().map(|r| r.end - r.start).sum::<usize>(),
             range.end - range.start
