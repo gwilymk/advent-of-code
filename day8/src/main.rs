@@ -11,7 +11,6 @@ struct Node(String);
 
 struct Map {
     nodes: Vec<Node>,
-    end: Vec<bool>,
 
     map: Vec<(usize, usize)>,
 }
@@ -35,19 +34,14 @@ impl Map {
         }
 
         let mut map = vec![Default::default(); nodes.len()];
-        let mut end = vec![false; nodes.len()];
 
         for (start, (left, right)) in nodes.iter() {
             map[node_to_id[start]] = (node_to_id[left], node_to_id[right]);
-            if start.0.ends_with('Z') {
-                end[node_to_id[start]] = true;
-            }
         }
 
         Map {
             nodes: nodes_vec,
             map,
-            end,
         }
     }
 
@@ -73,7 +67,7 @@ impl Map {
     }
 
     fn follow_all(&self, input: &str) -> usize {
-        let mut current: Vec<_> = self
+        let starting_positions: Vec<_> = self
             .nodes
             .iter()
             .enumerate()
@@ -86,30 +80,36 @@ impl Map {
             })
             .collect();
 
-        let mut count = 0;
+        let mut cycle_lengths = vec![];
 
-        for c in input.chars().cycle() {
-            count += 1;
+        // want to find the length of each loop for each starting position
+        for starting_position in starting_positions {
+            let mut current_position = starting_position;
 
-            if count % 10000000 == 0 {
-                println!("{count}");
-            }
+            let mut seen_positions = vec![vec![0; input.len()]; self.nodes.len()];
 
-            for node in &mut current {
-                let (left, right) = self.map[*node];
-                if c == 'L' {
-                    *node = left;
-                } else {
-                    *node = right;
+            for (time, (i, &c)) in input.as_bytes().iter().enumerate().cycle().enumerate() {
+                if seen_positions[current_position][i] != 0 {
+                    // we've been here before... so this is the loop length
+                    let cycle_length = time + 1 - seen_positions[current_position][i];
+                    cycle_lengths.push(cycle_length);
+                    break;
                 }
-            }
 
-            if current.iter().all(|&c| self.end[c]) {
-                return count;
+                seen_positions[current_position][i] = time + 1;
+
+                let (left, right) = self.map[current_position];
+                if c == b'L' {
+                    current_position = left;
+                } else {
+                    current_position = right;
+                }
             }
         }
 
-        todo!()
+        cycle_lengths
+            .iter()
+            .fold(1, |curr, cycle| num::integer::lcm(curr, *cycle))
     }
 }
 
