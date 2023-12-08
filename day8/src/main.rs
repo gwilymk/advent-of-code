@@ -10,38 +10,61 @@ fn main() {
 struct Node(String);
 
 struct Map {
-    nodes: HashMap<Node, (Node, Node)>,
+    nodes: Vec<Node>,
+    end: Vec<bool>,
+
+    map: Vec<(usize, usize)>,
 }
 
 impl Map {
     fn parse(input: &str) -> Self {
         let mut nodes = HashMap::new();
+        let mut node_to_id = HashMap::new();
+
+        let mut nodes_vec = vec![];
 
         for line in input.lines() {
             let start = line[0..3].to_owned();
             let left = line[7..10].to_owned();
             let right = line[12..15].to_owned();
 
-            nodes.insert(Node(start), (Node(left), Node(right)));
+            let start = Node(start);
+            nodes.insert(start.clone(), (Node(left), Node(right)));
+            node_to_id.insert(start.clone(), nodes_vec.len());
+            nodes_vec.push(start);
         }
 
-        Map { nodes }
+        let mut map = vec![Default::default(); nodes.len()];
+        let mut end = vec![false; nodes.len()];
+
+        for (start, (left, right)) in nodes.iter() {
+            map[node_to_id[start]] = (node_to_id[left], node_to_id[right]);
+            if start.0.ends_with('Z') {
+                end[node_to_id[start]] = true;
+            }
+        }
+
+        Map {
+            nodes: nodes_vec,
+            map,
+            end,
+        }
     }
 
     fn follow(&self, input: &str) -> usize {
-        let mut current = &Node("AAA".to_owned());
+        let mut current = self.nodes.iter().position(|x| x.0 == "AAA").unwrap();
         let mut count = 0;
 
         for c in input.chars().cycle() {
             count += 1;
-            let (left, right) = self.nodes.get(current).unwrap();
+            let (left, right) = self.map[current];
             if c == 'L' {
                 current = left;
             } else {
                 current = right;
             }
 
-            if current.0 == "ZZZ" {
+            if self.nodes[current].0 == "ZZZ" {
                 return count;
             }
         }
@@ -53,9 +76,10 @@ impl Map {
         let mut current: Vec<_> = self
             .nodes
             .iter()
-            .filter_map(|(start, _)| {
+            .enumerate()
+            .filter_map(|(id, start)| {
                 if start.0.ends_with('A') {
-                    Some(start)
+                    Some(id)
                 } else {
                     None
                 }
@@ -67,8 +91,12 @@ impl Map {
         for c in input.chars().cycle() {
             count += 1;
 
+            if count % 10000000 == 0 {
+                println!("{count}");
+            }
+
             for node in &mut current {
-                let (left, right) = self.nodes.get(node).unwrap();
+                let (left, right) = self.map[*node];
                 if c == 'L' {
                     *node = left;
                 } else {
@@ -76,7 +104,7 @@ impl Map {
                 }
             }
 
-            if current.iter().all(|c| c.0.ends_with('Z')) {
+            if current.iter().all(|&c| self.end[c]) {
                 return count;
             }
         }
