@@ -1,4 +1,5 @@
-use std::{collections::HashMap, fmt};
+use rayon::prelude::*;
+use std::{collections::HashMap, fmt, iter};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -13,6 +14,8 @@ fn part1(input: &str) -> usize {
 fn part2(input: &str) -> usize {
     input
         .lines()
+        .collect::<Vec<_>>()
+        .into_par_iter()
         .map(arrangements_for_longer_line)
         .sum::<usize>()
 }
@@ -138,11 +141,13 @@ fn arrangements_for_line(input: &str) -> usize {
 }
 
 fn arrangements_for_longer_line(input: &str) -> usize {
-    let (mut map, condition_records) = parse(input);
+    let (map, condition_records) = parse(input);
 
-    map.push(SpringInformation::MissingInformation);
-    let mut map = map.repeat(5);
-    map.pop();
+    let map = iter::once(map)
+        .cycle()
+        .take(5)
+        .collect::<Vec<_>>()
+        .join(&SpringInformation::MissingInformation);
     let condition_records = condition_records.repeat(5);
 
     let mut cache = HashMap::new();
