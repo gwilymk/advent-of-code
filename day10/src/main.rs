@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::collections::HashSet;
 
 fn main() {
@@ -199,7 +200,7 @@ impl Connection {
 fn enclosed_area(grid: &Grid) -> usize {
     let enclosed_loop = grid.get_loop();
     grid.non_loop()
-        .iter()
+        .par_iter()
         .filter(|&&pos| does_enclose(&enclosed_loop, pos))
         .count()
 }
