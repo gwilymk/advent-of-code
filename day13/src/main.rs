@@ -2,14 +2,15 @@ use std::fmt::Debug;
 
 fn main() {
     let input = include_str!("../input.txt");
-    println!("Part 1: {}", part1(input));
+    println!("Part 1: {}", solve(input, 0));
+    println!("Part 2: {}", solve(input, 1));
 }
 
-fn part1(input: &str) -> usize {
+fn solve(input: &str, smudges: usize) -> usize {
     input
         .split("\n\n")
         .map(Grid::parse)
-        .map(|grid| grid.part1_value())
+        .map(|grid| grid.value(smudges))
         .sum::<usize>()
 }
 
@@ -34,38 +35,42 @@ impl Grid {
         Self { ground }
     }
 
-    fn reflection_column(&self) -> Option<usize> {
+    fn reflection_column(&self, smudges: usize) -> Option<usize> {
         (1..self.ground[0].len()).find(|&x| {
-            self.ground.iter().all(|row| {
-                let amount = x.min(row.len() - x);
-                let before_line = row.iter().rev().skip(row.len() - x).take(amount);
-                let after_line = row.iter().skip(x).take(amount);
+            self.ground
+                .iter()
+                .map(|row| {
+                    let amount = x.min(row.len() - x);
+                    let before_line = row.iter().rev().skip(row.len() - x).take(amount);
+                    let after_line = row.iter().skip(x).take(amount);
 
-                before_line.eq(after_line)
-            })
+                    before_line.zip(after_line).filter(|(a, b)| a != b).count()
+                })
+                .sum::<usize>()
+                == smudges
         })
     }
 
-    fn reflection_row(&self) -> Option<usize> {
+    fn reflection_row(&self, smudges: usize) -> Option<usize> {
         (1..self.ground.len()).find(|&y| {
-            (0..self.ground[0].len()).all(|x| {
-                let column: Vec<_> = self.ground.iter().map(|row| row[x]).collect();
+            (0..self.ground[0].len())
+                .map(|x| {
+                    let column: Vec<_> = self.ground.iter().map(|row| row[x]).collect();
 
-                let amount = y.min(column.len() - y);
-                let before_line = column.iter().rev().skip(column.len() - y).take(amount);
-                let after_line = column.iter().skip(y).take(amount);
+                    let amount = y.min(column.len() - y);
+                    let before_line = column.iter().rev().skip(column.len() - y).take(amount);
+                    let after_line = column.iter().skip(y).take(amount);
 
-                before_line.eq(after_line)
-            })
+                    before_line.zip(after_line).filter(|(a, b)| a != b).count()
+                })
+                .sum::<usize>()
+                == smudges
         })
     }
 
-    fn part1_value(&self) -> usize {
-        let value =
-            self.reflection_column().unwrap_or(0) + self.reflection_row().unwrap_or(0) * 100;
-
-        println!("{self:?}{value}");
-        value
+    fn value(&self, smudges: usize) -> usize {
+        self.reflection_column(smudges).unwrap_or(0)
+            + self.reflection_row(smudges).unwrap_or(0) * 100
     }
 }
 
@@ -104,8 +109,8 @@ fn can_find_column_of_reflection() {
 #.#.##.#.",
     );
 
-    assert_eq!(grid.reflection_column(), Some(5));
-    assert_eq!(grid.reflection_row(), None)
+    assert_eq!(grid.reflection_column(0), Some(5));
+    assert_eq!(grid.reflection_row(0), None)
 }
 
 #[test]
@@ -120,8 +125,8 @@ fn can_find_row_of_reflection() {
 #....#..#",
     );
 
-    assert_eq!(grid.reflection_row(), Some(4));
-    assert_eq!(grid.reflection_column(), None);
+    assert_eq!(grid.reflection_row(0), Some(4));
+    assert_eq!(grid.reflection_column(0), None);
 }
 
 #[test]
@@ -140,5 +145,5 @@ fn can_find_at_edge() {
 ..#.#...#......##",
     );
 
-    assert_eq!(grid.part1_value(), 1000);
+    assert_eq!(grid.value(0), 1000);
 }
