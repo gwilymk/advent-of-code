@@ -41,6 +41,23 @@ impl<'a> LenseBox<'a> {
             .map(|(i, lense)| (i + 1) * lense.value)
             .sum::<usize>()
     }
+
+    fn apply_instruction(&mut self, instruction: Instruction<'a>) {
+        match instruction {
+            Instruction::Remove(id) => {
+                if let Some(box_to_remove) = self.lenses.iter().position(|lense| lense.id == id) {
+                    self.lenses.remove(box_to_remove);
+                }
+            }
+            Instruction::Add(id, value) => {
+                if let Some(current) = self.lenses.iter_mut().find(|lense| lense.id == id) {
+                    current.value = value;
+                } else {
+                    self.lenses.push(Lense { id, value });
+                }
+            }
+        }
+    }
 }
 
 impl<'a> Debug for LenseBox<'a> {
@@ -59,24 +76,7 @@ fn part2(input: &str) -> usize {
 
     for instruction in input.split(',') {
         let instruction = Instruction::parse(instruction).unwrap();
-        match instruction {
-            Instruction::Remove(id) => {
-                let lense_box = &mut lense_boxes[hash(id)];
-                if let Some(box_to_remove) =
-                    lense_box.lenses.iter().position(|lense| lense.id == id)
-                {
-                    lense_box.lenses.remove(box_to_remove);
-                }
-            }
-            Instruction::Add(id, value) => {
-                let lense_box = &mut lense_boxes[hash(id)];
-                if let Some(current) = lense_box.lenses.iter_mut().find(|lense| lense.id == id) {
-                    current.value = value;
-                } else {
-                    lense_box.lenses.push(Lense { id, value });
-                }
-            }
-        }
+        lense_boxes[instruction.box_to_apply_to()].apply_instruction(instruction);
     }
 
     lense_boxes
@@ -103,6 +103,13 @@ impl<'a> Instruction<'a> {
             Ok(Instruction::Add(id, value))
         } else {
             Err(())
+        }
+    }
+
+    fn box_to_apply_to(&self) -> usize {
+        match self {
+            Instruction::Remove(id) => hash(id),
+            Instruction::Add(id, _) => hash(id),
         }
     }
 }
