@@ -1,14 +1,47 @@
 fn main() {
     let input = include_str!("../input.txt");
-    println!("Part 1: {}", part1(input));
+    let contraption = Contraption::parse(input);
+    println!("Part 1: {}", part1(&contraption));
+    println!("Part 2: {}", part2(&contraption));
 }
 
-fn part1(input: &str) -> usize {
-    let contraption = Contraption::parse(input);
+fn part1(contraption: &Contraption) -> usize {
+    count_hits(contraption, (0, 0), LightDirection::Right)
+}
+
+fn part2(contraption: &Contraption) -> usize {
+    let mut best_so_far = 0;
+
+    for start_x in 0..contraption.width() {
+        best_so_far = best_so_far.max(count_hits(contraption, (start_x, 0), LightDirection::Down));
+        best_so_far = best_so_far.max(count_hits(
+            contraption,
+            (start_x, contraption.height() - 1),
+            LightDirection::Up,
+        ));
+    }
+
+    for start_y in 0..contraption.height() {
+        best_so_far = best_so_far.max(count_hits(contraption, (0, start_y), LightDirection::Right));
+        best_so_far = best_so_far.max(count_hits(
+            contraption,
+            (contraption.width() - 1, start_y),
+            LightDirection::Left,
+        ));
+    }
+
+    best_so_far
+}
+
+fn count_hits(
+    contraption: &Contraption,
+    start_point: (usize, usize),
+    start_direction: LightDirection,
+) -> usize {
     let mut result = vec![];
     result.resize_with(contraption.height(), || vec![0; contraption.width()]);
 
-    contraption.simulate((0, 0), LightDirection::Right, &mut result);
+    contraption.simulate(start_point, start_direction, &mut result);
 
     result
         .iter()
