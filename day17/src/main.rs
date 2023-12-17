@@ -48,7 +48,6 @@ impl CityMap {
                             continue;
                         }
 
-
                         graph.add_edge(
                             nodes[y][x].unwrap(),
                             nodes[target_y][target_x].unwrap(),
@@ -60,12 +59,9 @@ impl CityMap {
         }
 
         let goal_node = nodes.last().unwrap().last().unwrap().unwrap();
-        let shortest_paths = dijkstra(
-            &graph,
-            nodes[0][0].unwrap(),
-            Some(goal_node),
-            |e| *e.weight(),
-        );
+        let shortest_paths = dijkstra(&graph, nodes[0][0].unwrap(), Some(goal_node), |e| {
+            *e.weight()
+        });
 
         *shortest_paths.get(&goal_node).unwrap()
     }
