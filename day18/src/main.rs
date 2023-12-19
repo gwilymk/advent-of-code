@@ -1,12 +1,15 @@
-use std::fmt::Debug;
+use std::collections::HashSet;
 
 fn main() {
     let input = include_str!("../input.txt");
     println!("Part 1: {}", part1(input));
 }
 
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+struct Point(usize, usize);
+
 struct Ground {
-    ground: Vec<Vec<bool>>,
+    lines: Vec<(Point, Point)>,
     digger_position: (usize, usize),
 }
 
@@ -31,75 +34,66 @@ impl Direction {
 
 impl Ground {
     fn new(start_point: (usize, usize), (width, height): (usize, usize)) -> Self {
-        let mut ground = vec![vec![false; width]; height];
-
-        ground[start_point.1][start_point.0] = true;
         Self {
-            ground,
+            lines: vec![],
             digger_position: start_point,
         }
     }
 
     fn dig(&mut self, instruction: Instruction) {
         let step_amount = instruction.0.step_amount();
+        let start_point = Point(self.digger_position.0, self.digger_position.1);
+        let end_point_x = start_point
+            .0
+            .checked_add_signed(step_amount.0 * instruction.1)
+            .unwrap();
+        let end_point_y = start_point
+            .1
+            .checked_add_signed(step_amount.1 * instruction.1)
+            .unwrap();
 
-        for _ in 0..instruction.1 {
-            self.digger_position = (
-                self.digger_position
-                    .0
-                    .checked_add_signed(step_amount.0)
-                    .unwrap(),
-                self.digger_position
-                    .1
-                    .checked_add_signed(step_amount.1)
-                    .unwrap(),
-            );
-            self.ground[self.digger_position.1][self.digger_position.0] = true;
-        }
-    }
-
-    fn flood_fill(&mut self) {
-        // go left until the second point
-        let x_start = self.ground[0].iter().position(|&x| x).unwrap() + 1;
-        let y_start = 1;
-
-        self.do_flood_fill((x_start, y_start));
-    }
-
-    fn do_flood_fill(&mut self, (x, y): (usize, usize)) {
-        if !self.ground[y][x] {
-            self.ground[y][x] = true;
-
-            self.do_flood_fill((x - 1, y));
-            self.do_flood_fill((x + 1, y));
-            self.do_flood_fill((x, y + 1));
-            self.do_flood_fill((x, y - 1));
-        }
+        self.lines
+            .push((start_point, Point(end_point_x, end_point_y)));
     }
 
     fn total_size(&self) -> usize {
-        self.ground
-            .iter()
-            .map(|row| row.iter().filter(|&&ground| ground).count())
-            .sum::<usize>()
-    }
-}
+        let mut rectangles = HashSet::new();
 
-impl Debug for Ground {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in &self.ground {
-            for &item in row {
-                if item {
-                    write!(f, "#")?;
-                } else {
-                    write!(f, ".")?;
-                }
+        for &(line_start, line_end) in &self.lines {
+            // if the line is vertical, don't worry about it
+            if line_start.0 == line_end.0 {
+                continue;
             }
 
-            writeln!(f)?;
+            // project the start point up and down and find all the lines that intersect them
+            let intersection_lines_with_start: HashSet<_> = self
+                .lines
+                .iter()
+                .filter(|test_line| {
+                    let x_min = test_line.0 .0.min(test_line.1 .0);
+                    let x_max = test_line.0 .0.max(test_line.1 .0);
+
+                    x_min <= line_start.0 && x_max >= line_start.0
+                })
+                .collect();
+
+            // project the end point up and down and find all the lines that intersect them
+            let intersection_lines_with_end: HashSet<_> = self
+                .lines
+                .iter()
+                .filter(|test_line| {
+                    let x_min = test_line.0 .0.min(test_line.1 .0);
+                    let x_max = test_line.0 .0.max(test_line.1 .0);
+
+                    x_min <= line_end.0 && x_max >= line_end.0
+                })
+                .collect();
+
+            // cases:
+            
         }
 
-        Ok(())
+        todo!()
     }
 }
 
@@ -173,7 +167,6 @@ fn part1(input: &str) -> usize {
         ground.dig(instruction);
     }
 
-    ground.flood_fill();
     ground.total_size()
 }
 
