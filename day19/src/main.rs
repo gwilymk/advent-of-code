@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -89,47 +89,6 @@ impl PartRange {
             a: Rc::new([false; 4000]),
             s: Rc::new([false; 4000]),
         }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.x.iter().all(|&x| x == false)
-            && self.m.iter().all(|&m| m == false)
-            && self.a.iter().all(|&a| a == false)
-            && self.s.iter().all(|&s| s == false)
-    }
-
-    fn union(&mut self, other: &Self) {
-        macro_rules! union_value {
-            ($value: ident) => {
-                let mut x = self.$value.deref().clone();
-                for (x, other_x) in x.iter_mut().zip(other.$value.iter()) {
-                    *x = *x || *other_x;
-                }
-                self.$value = Rc::new(x);
-            };
-        }
-
-        union_value!(x);
-        union_value!(m);
-        union_value!(a);
-        union_value!(s);
-    }
-
-    fn intersection(&mut self, other: &Self) {
-        macro_rules! intersect_value {
-            ($value: ident) => {
-                let mut x = self.$value.deref().clone();
-                for (x, other_x) in x.iter_mut().zip(other.$value.iter()) {
-                    *x = *x || *other_x;
-                }
-                self.$value = Rc::new(x);
-            };
-        }
-
-        intersect_value!(x);
-        intersect_value!(m);
-        intersect_value!(a);
-        intersect_value!(s);
     }
 
     fn total_values(&self) -> usize {
