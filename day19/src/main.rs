@@ -49,9 +49,13 @@ impl std::fmt::Debug for PartRange {
         macro_rules! debug_value {
             ($value: ident) => {
                 for &v in self.$value.iter() {
-                    if v { write!(f, "#")?; } else { write!(f, ".")?; }
+                    if v {
+                        write!(f, "#")?;
+                    } else {
+                        write!(f, ".")?;
+                    }
                 }
-            }
+            };
         }
 
         write!(f, "x: ")?;
@@ -132,7 +136,7 @@ impl PartRange {
         macro_rules! count_values {
             ($value: ident) => {
                 self.$value.iter().filter(|&&value| value).count()
-            }
+            };
         }
 
         count_values!(x) * count_values!(m) * count_values!(a) * count_values!(s)
@@ -288,7 +292,7 @@ impl WorkflowRule {
                             item.extract_from_part_range(&accepted_part_range).clone();
                         let mut rejected =
                             item.extract_from_part_range(&rejected_part_range).clone();
-                        for i in 0..=*value {
+                        for i in 0..*value {
                             accepted[i] = false;
                         }
                         for i in *value..4000 {
@@ -302,10 +306,10 @@ impl WorkflowRule {
                             item.extract_from_part_range(&accepted_part_range).clone();
                         let mut rejected =
                             item.extract_from_part_range(&rejected_part_range).clone();
-                        for i in *value..4000 {
+                        for i in (*value - 1)..4000 {
                             accepted[i] = false;
                         }
-                        for i in 0..=*value {
+                        for i in 0..(*value - 1) {
                             rejected[i] = false;
                         }
                         item.set_part_range(&mut accepted_part_range, Rc::new(accepted));
@@ -359,14 +363,14 @@ impl Workflow {
         }
     }
 
-    fn accepted_parts(&self, start_rule: &str, parts_to_try: PartRange) -> PartRange {
+    fn accepted_parts(&self, start_rule: &str, parts_to_try: PartRange) -> Vec<PartRange> {
         if start_rule == "A" {
-            return parts_to_try;
+            return vec![parts_to_try];
         } else if start_rule == "R" {
-            return PartRange::empty();
+            return vec![];
         }
 
-        let mut accepted_parts = PartRange::empty();
+        let mut accepted_parts = vec![];
 
         let mut current_parts = parts_to_try;
         let current_rule = self.rules.get(start_rule).unwrap();
@@ -374,11 +378,9 @@ impl Workflow {
         for rule in current_rule {
             let (rule_pass, rule_fail, target) = rule.target_range(&current_parts);
 
-            accepted_parts.union(&self.accepted_parts(target, rule_pass));
+            accepted_parts.append(&mut self.accepted_parts(target, rule_pass));
             current_parts = rule_fail;
         }
-
-        println!("{start_rule} {accepted_parts:?}");
 
         accepted_parts
     }
@@ -407,7 +409,10 @@ fn part2(input: &str) -> usize {
     let workflow = Workflow::parse(rules);
 
     let accepted_parts = workflow.accepted_parts("in", PartRange::full());
-    accepted_parts.total_values()
+    accepted_parts
+        .iter()
+        .map(|accepted_part| accepted_part.total_values())
+        .sum::<usize>()
 }
 
 #[test]
