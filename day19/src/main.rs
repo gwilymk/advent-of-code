@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 fn main() {
     let input = include_str!("../input.txt");
     println!("Part 1: {}", part1(input));
+    println!("Part 2: {}", part2(input));
 }
 
 struct Part {
@@ -14,10 +15,13 @@ struct Part {
 
 impl Part {
     fn parse(input: &str) -> Self {
-        let values = input.split(',').map(|value| {
-            let (_item, value) = value.split_once('=').unwrap();
-            value.trim_end_matches('}').parse::<usize>().unwrap()
-        }).collect::<Vec<_>>();
+        let values = input
+            .split(',')
+            .map(|value| {
+                let (_item, value) = value.split_once('=').unwrap();
+                value.trim_end_matches('}').parse::<usize>().unwrap()
+            })
+            .collect::<Vec<_>>();
 
         Self {
             x: values[0],
@@ -29,6 +33,109 @@ impl Part {
 
     fn total_rating(&self) -> usize {
         self.x + self.m + self.a + self.s
+    }
+}
+
+#[derive(Clone)]
+struct PartRange {
+    x: Rc<[bool; 4000]>,
+    m: Rc<[bool; 4000]>,
+    a: Rc<[bool; 4000]>,
+    s: Rc<[bool; 4000]>,
+}
+
+impl std::fmt::Debug for PartRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        macro_rules! debug_value {
+            ($value: ident) => {
+                for &v in self.$value.iter() {
+                    if v { write!(f, "#")?; } else { write!(f, ".")?; }
+                }
+            }
+        }
+
+        write!(f, "x: ")?;
+        debug_value!(x);
+        write!(f, "\nm: ")?;
+        debug_value!(m);
+        write!(f, "\na: ")?;
+        debug_value!(a);
+        write!(f, "\ns: ")?;
+        debug_value!(s);
+        writeln!(f)?;
+
+        Ok(())
+    }
+}
+
+impl PartRange {
+    fn full() -> Self {
+        Self {
+            x: Rc::new([true; 4000]),
+            m: Rc::new([true; 4000]),
+            a: Rc::new([true; 4000]),
+            s: Rc::new([true; 4000]),
+        }
+    }
+
+    fn empty() -> Self {
+        Self {
+            x: Rc::new([false; 4000]),
+            m: Rc::new([false; 4000]),
+            a: Rc::new([false; 4000]),
+            s: Rc::new([false; 4000]),
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.x.iter().all(|&x| x == false)
+            && self.m.iter().all(|&m| m == false)
+            && self.a.iter().all(|&a| a == false)
+            && self.s.iter().all(|&s| s == false)
+    }
+
+    fn union(&mut self, other: &Self) {
+        macro_rules! union_value {
+            ($value: ident) => {
+                let mut x = self.$value.deref().clone();
+                for (x, other_x) in x.iter_mut().zip(other.$value.iter()) {
+                    *x = *x || *other_x;
+                }
+                self.$value = Rc::new(x);
+            };
+        }
+
+        union_value!(x);
+        union_value!(m);
+        union_value!(a);
+        union_value!(s);
+    }
+
+    fn intersection(&mut self, other: &Self) {
+        macro_rules! intersect_value {
+            ($value: ident) => {
+                let mut x = self.$value.deref().clone();
+                for (x, other_x) in x.iter_mut().zip(other.$value.iter()) {
+                    *x = *x || *other_x;
+                }
+                self.$value = Rc::new(x);
+            };
+        }
+
+        intersect_value!(x);
+        intersect_value!(m);
+        intersect_value!(a);
+        intersect_value!(s);
+    }
+
+    fn total_values(&self) -> usize {
+        macro_rules! count_values {
+            ($value: ident) => {
+                self.$value.iter().filter(|&&value| value).count()
+            }
+        }
+
+        count_values!(x) * count_values!(m) * count_values!(a) * count_values!(s)
     }
 }
 
@@ -65,6 +172,24 @@ impl WorkflowItemToCheck {
             WorkflowItemToCheck::S => part.s,
         }
     }
+
+    fn extract_from_part_range(self, part: &PartRange) -> &[bool; 4000] {
+        match self {
+            WorkflowItemToCheck::X => &part.x,
+            WorkflowItemToCheck::M => &part.m,
+            WorkflowItemToCheck::A => &part.a,
+            WorkflowItemToCheck::S => &part.s,
+        }
+    }
+
+    fn set_part_range(self, part: &mut PartRange, values: Rc<[bool; 4000]>) {
+        match self {
+            WorkflowItemToCheck::X => part.x = values,
+            WorkflowItemToCheck::M => part.m = values,
+            WorkflowItemToCheck::A => part.a = values,
+            WorkflowItemToCheck::S => part.s = values,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -86,7 +211,9 @@ impl WorkflowRule {
             .split(',')
             .map(|rule| {
                 if !rule.contains(':') {
-                    return Self::Unconditional { target: rule.to_owned() };
+                    return Self::Unconditional {
+                        target: rule.to_owned(),
+                    };
                 }
 
                 let mut iter = rule.chars();
@@ -121,7 +248,12 @@ impl WorkflowRule {
 
     fn target(&self, part: &Part) -> Option<&'_ str> {
         match self {
-            WorkflowRule::Conditional { item, check, value, target } => {
+            WorkflowRule::Conditional {
+                item,
+                check,
+                value,
+                target,
+            } => {
                 let part_value = item.extract_from_part(part);
                 let passes_check = match check {
                     WorkflowCheck::Greater => part_value > *value,
@@ -133,8 +265,59 @@ impl WorkflowRule {
                 } else {
                     None
                 }
-            },
+            }
             WorkflowRule::Unconditional { target } => Some(target),
+        }
+    }
+
+    // returns ones which pass, ones which don't and where to go
+    fn target_range(&self, part_range: &PartRange) -> (PartRange, PartRange, &'_ str) {
+        match self {
+            WorkflowRule::Conditional {
+                item,
+                check,
+                value,
+                target,
+            } => {
+                let mut accepted_part_range = part_range.clone();
+                let mut rejected_part_range = part_range.clone();
+
+                match check {
+                    WorkflowCheck::Greater => {
+                        let mut accepted =
+                            item.extract_from_part_range(&accepted_part_range).clone();
+                        let mut rejected =
+                            item.extract_from_part_range(&rejected_part_range).clone();
+                        for i in 0..=*value {
+                            accepted[i] = false;
+                        }
+                        for i in *value..4000 {
+                            rejected[i] = false;
+                        }
+                        item.set_part_range(&mut accepted_part_range, Rc::new(accepted));
+                        item.set_part_range(&mut rejected_part_range, Rc::new(rejected));
+                    }
+                    WorkflowCheck::LessThan => {
+                        let mut accepted =
+                            item.extract_from_part_range(&accepted_part_range).clone();
+                        let mut rejected =
+                            item.extract_from_part_range(&rejected_part_range).clone();
+                        for i in *value..4000 {
+                            accepted[i] = false;
+                        }
+                        for i in 0..=*value {
+                            rejected[i] = false;
+                        }
+                        item.set_part_range(&mut accepted_part_range, Rc::new(accepted));
+                        item.set_part_range(&mut rejected_part_range, Rc::new(rejected));
+                    }
+                }
+
+                (accepted_part_range, rejected_part_range, target)
+            }
+            WorkflowRule::Unconditional { target } => {
+                (part_range.clone(), PartRange::empty(), target)
+            }
         }
     }
 }
@@ -161,8 +344,12 @@ impl Workflow {
         let mut current_rule = "in";
         while current_rule != "R" && current_rule != "A" {
             let rules = self.rules.get(current_rule).unwrap();
-            
-            current_rule = rules.iter().filter_map(|rule| rule.target(part)).next().unwrap();
+
+            current_rule = rules
+                .iter()
+                .filter_map(|rule| rule.target(part))
+                .next()
+                .unwrap();
         }
 
         if current_rule == "A" {
@@ -170,6 +357,30 @@ impl Workflow {
         } else {
             WorkflowResult::Reject
         }
+    }
+
+    fn accepted_parts(&self, start_rule: &str, parts_to_try: PartRange) -> PartRange {
+        if start_rule == "A" {
+            return parts_to_try;
+        } else if start_rule == "R" {
+            return PartRange::empty();
+        }
+
+        let mut accepted_parts = PartRange::empty();
+
+        let mut current_parts = parts_to_try;
+        let current_rule = self.rules.get(start_rule).unwrap();
+
+        for rule in current_rule {
+            let (rule_pass, rule_fail, target) = rule.target_range(&current_parts);
+
+            accepted_parts.union(&self.accepted_parts(target, rule_pass));
+            current_parts = rule_fail;
+        }
+
+        println!("{start_rule} {accepted_parts:?}");
+
+        accepted_parts
     }
 }
 
@@ -186,7 +397,17 @@ fn part1(input: &str) -> usize {
     let parts = parts.lines().map(|line| Part::parse(line));
     let accepted_parts = parts.filter(|part| workflow.result(part) == WorkflowResult::Accept);
 
-    accepted_parts.map(|part| part.total_rating()).sum::<usize>()
+    accepted_parts
+        .map(|part| part.total_rating())
+        .sum::<usize>()
+}
+
+fn part2(input: &str) -> usize {
+    let (rules, _parts) = input.split_once("\n\n").unwrap();
+    let workflow = Workflow::parse(rules);
+
+    let accepted_parts = workflow.accepted_parts("in", PartRange::full());
+    accepted_parts.total_values()
 }
 
 #[test]
@@ -210,4 +431,5 @@ hdj{m>838:A,pv}
 {x=2127,m=1623,a=2188,s=1013}";
 
     assert_eq!(part1(input), 19114);
+    assert_eq!(part2(input), 167409079868000);
 }
