@@ -13,7 +13,7 @@ enum Tile {
 
 struct GardenMap {
     map: Vec<Vec<Tile>>,
-    start_point: (usize, usize),
+    start_point: (isize, isize),
 }
 
 impl GardenMap {
@@ -28,7 +28,7 @@ impl GardenMap {
                     '.' => Tile::GardenPlot,
                     '#' => Tile::Rock,
                     'S' => {
-                        start_point = (x, y);
+                        start_point = (x as _, y as _);
                         Tile::GardenPlot
                     }
                     _ => panic!("Unknown character {c}"),
@@ -43,37 +43,64 @@ impl GardenMap {
         Self { start_point, map }
     }
 
-    fn get_point(&self, pos: (usize, usize)) -> Option<Tile> {
-        self.map
-            .get(pos.1)
-            .and_then(|line| line.get(pos.0))
-            .copied()
+    fn get_point(&self, (x, y): (isize, isize), is_infinite: bool) -> Option<Tile> {
+        let x = if is_infinite {
+            x.rem_euclid(self.map[0].len() as isize) as usize
+        } else {
+            if x < 0 {
+                return None;
+            }
+
+            x as usize
+        };
+
+        let y = if is_infinite {
+            y.rem_euclid(self.map.len() as isize) as usize
+        } else {
+            if y < 0 {
+                return None;
+            }
+
+            y as usize
+        };
+
+        self.map.get(y).and_then(|line| line.get(x)).copied()
     }
 
-    fn get_point_offset(&self, pos: (usize, usize), offset: (isize, isize)) -> Option<Tile> {
-        self.get_point((
-            pos.0.checked_add_signed(offset.0)?,
-            pos.1.checked_add_signed(offset.1)?,
-        ))
+    fn calculate_point_offset(
+        &self,
+        pos: (isize, isize),
+        offset: (isize, isize),
+    ) -> (isize, isize) {
+        (pos.0 + offset.0, pos.1 + offset.1)
     }
 
-    pub fn possible_positions(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
+    pub fn possible_positions(
+        &self,
+        pos: (isize, isize),
+        is_infinite: bool,
+    ) -> Vec<(isize, isize)> {
         let mut res = vec![];
 
-        if self.get_point_offset(pos, (1, 0)) == Some(Tile::GardenPlot) {
-            res.push((pos.0 + 1, pos.1));
+        let up = self.calculate_point_offset(pos, (0, -1));
+        let down = self.calculate_point_offset(pos, (0, 1));
+        let left = self.calculate_point_offset(pos, (-1, 0));
+        let right = self.calculate_point_offset(pos, (1, 0));
+
+        if self.get_point(up, is_infinite) == Some(Tile::GardenPlot) {
+            res.push(up);
         }
 
-        if self.get_point_offset(pos, (-1, 0)) == Some(Tile::GardenPlot) {
-            res.push((pos.0 - 1, pos.1));
+        if self.get_point(down, is_infinite) == Some(Tile::GardenPlot) {
+            res.push(down);
         }
 
-        if self.get_point_offset(pos, (0, 1)) == Some(Tile::GardenPlot) {
-            res.push((pos.0, pos.1 + 1));
+        if self.get_point(left, is_infinite) == Some(Tile::GardenPlot) {
+            res.push(left);
         }
 
-        if self.get_point_offset(pos, (0, -1)) == Some(Tile::GardenPlot) {
-            res.push((pos.0, pos.1 - 1));
+        if self.get_point(right, is_infinite) == Some(Tile::GardenPlot) {
+            res.push(right);
         }
 
         res
@@ -88,7 +115,26 @@ fn part1(map: &GardenMap, steps: usize) -> usize {
         let mut new_positions = HashSet::new();
 
         for position in positions {
-            for possible_position in map.possible_positions(position) {
+            for possible_position in map.possible_positions(position, false) {
+                new_positions.insert(possible_position);
+            }
+        }
+
+        positions = new_positions;
+    }
+
+    positions.len()
+}
+
+fn part2(map: &GardenMap, steps: usize) -> usize {
+    let mut positions = HashSet::new();
+    positions.insert(map.start_point);
+
+    for _ in 0..steps {
+        let mut new_positions = HashSet::new();
+
+        for position in positions {
+            for possible_position in map.possible_positions(position, true) {
                 new_positions.insert(possible_position);
             }
         }
@@ -116,4 +162,26 @@ fn given_input_part1() {
     );
 
     assert_eq!(part1(&map, 6), 16);
+}
+
+#[test]
+fn given_input_part2() {
+    let map = GardenMap::parse(
+        "...........
+.....###.#.
+.###.##..#.
+..#.#...#..
+....#.#....
+.##..S####.
+.##..#...#.
+.......##..
+.##.#.####.
+.##..##.##.
+...........",
+    );
+
+    assert_eq!(part2(&map, 6), 16);
+    assert_eq!(part2(&map, 10), 50);
+    assert_eq!(part2(&map, 50), 1594);
+    assert_eq!(part2(&map, 500), 167004);
 }
