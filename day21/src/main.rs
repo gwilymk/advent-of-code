@@ -14,6 +14,9 @@ enum Tile {
 struct GardenMap {
     map: Vec<Vec<Tile>>,
     start_point: (isize, isize),
+
+    width: usize,
+    height: usize,
 }
 
 impl GardenMap {
@@ -40,12 +43,20 @@ impl GardenMap {
             map.push(map_line);
         }
 
-        Self { start_point, map }
+        let width = map[0].len();
+        let height = map.len();
+
+        Self {
+            start_point,
+            map,
+            width,
+            height,
+        }
     }
 
     fn get_point(&self, (x, y): (isize, isize), is_infinite: bool) -> Option<Tile> {
         let x = if is_infinite {
-            x.rem_euclid(self.map[0].len() as isize) as usize
+            x.rem_euclid(self.width as isize) as usize
         } else {
             if x < 0 {
                 return None;
@@ -55,7 +66,7 @@ impl GardenMap {
         };
 
         let y = if is_infinite {
-            y.rem_euclid(self.map.len() as isize) as usize
+            y.rem_euclid(self.height as isize) as usize
         } else {
             if y < 0 {
                 return None;
