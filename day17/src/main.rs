@@ -1,8 +1,11 @@
 use std::fmt::Debug;
 
+use colored::Colorize;
+
 fn main() {
     let city_map = CityMap::parse(include_str!("../input.txt"));
-    println!("Part 1: {}", city_map.minimum_route_cost());
+    println!("Part 1: {}", city_map.minimum_route_cost(1, 3));
+    println!("Part 2: {}", city_map.minimum_route_cost(3, 10));
 }
 
 struct CityMap {
@@ -19,7 +22,7 @@ impl CityMap {
         Self { heat_loss }
     }
 
-    fn minimum_route_cost(&self) -> usize {
+    fn minimum_route_cost(&self, minimum_distance: usize, maximum_distance: usize) -> usize {
         let mut graph = petgraph::graphmap::DiGraphMap::new();
 
         for y in 0..self.heat_loss.len() {
@@ -27,14 +30,28 @@ impl CityMap {
                 for direction in Direction::all() {
                     let mut heat_loss = self.heat_loss[y][x];
 
-                    for distance in 1..=3 {
+                    for distance in 1..minimum_distance {
                         let Some(target_point) = direction.move_point((x, y), distance) else {
                             continue;
                         };
 
-                        if distance == 3 && x == 0 && y == 0 {
+                        if target_point.0 >= self.heat_loss[0].len()
+                            || target_point.1 >= self.heat_loss.len()
+                        {
                             continue;
                         }
+
+                        heat_loss += self.heat_loss[target_point.1][target_point.0];
+                    }
+
+                    for distance in minimum_distance..=maximum_distance {
+                        let Some(target_point) = direction.move_point((x, y), distance) else {
+                            continue;
+                        };
+
+                        // if distance == maximum_distance && x == 0 && y == 0 {
+                        //     continue;
+                        // }
 
                         if target_point.0 >= self.heat_loss[0].len()
                             || target_point.1 >= self.heat_loss.len()
@@ -47,6 +64,10 @@ impl CityMap {
                         let speedy_node = GraphNode::Speedy((x, y), direction, distance);
 
                         for other_direction in Direction::all_except(direction) {
+                            if other_direction == direction.opposite() {
+                                continue;
+                            }
+
                             let Some(new_point) = other_direction.move_point(target_point, 1) else {
                                 continue;
                             };
@@ -59,8 +80,17 @@ impl CityMap {
 
                             for valid_direction in Direction::all_except(other_direction.opposite())
                             {
-                                for distance in 1..=3 {
-                                    if distance == 3 && valid_direction == other_direction {
+                                if minimum_distance != 1
+                                    && (valid_direction == direction
+                                        || valid_direction == direction.opposite())
+                                {
+                                    continue;
+                                }
+
+                                for distance in minimum_distance..=maximum_distance {
+                                    if distance == maximum_distance
+                                        && valid_direction == other_direction
+                                    {
                                         continue;
                                     }
 
@@ -96,14 +126,11 @@ impl CityMap {
         let mut debug_output = vec![vec![0; self.heat_loss[0].len()]; self.heat_loss.len()];
 
         for (index, item) in shortest_path.1.iter().enumerate() {
-            match *item {
-                GraphNode::Speedy(start_point, direction, distance) => {
-                    for i in 0..=distance {
-                        let (x, y) = direction.move_point(start_point, i).unwrap();
-                        debug_output[y][x] = index;
-                    }
+            if let GraphNode::Speedy(start_point, direction, distance) = *item {
+                for i in 0..=distance {
+                    let (x, y) = direction.move_point(start_point, i).unwrap();
+                    debug_output[y][x] = index;
                 }
-                GraphNode::Point((x, y)) => debug_output[y][x] = index,
             }
         }
 
@@ -114,18 +141,19 @@ impl CityMap {
             );
         }
 
-        for row in debug_output {
-            for item in row {
-                if item != 0 {
-                    print!("{}", item - 1);
+        for (y, row) in debug_output.iter().enumerate() {
+            for (x, item) in row.iter().enumerate() {
+                let heat_loss = self.heat_loss[y][x];
+                if *item != 0 {
+                    print!("{}", self.heat_loss[y][x].to_string().red());
                 } else {
-                    print!(".");
+                    print!("{}", heat_loss);
                 }
             }
             println!();
         }
 
-        shortest_path.0 - self.heat_loss[0][0] - 2 // no idea why I'm always 2 too big
+        shortest_path.0 - self.heat_loss[0][0]
     }
 }
 
@@ -201,5 +229,18 @@ fn given_input() {
 4322674655533";
 
     let city_map = CityMap::parse(input);
-    assert_eq!(city_map.minimum_route_cost(), 102);
+    assert_eq!(city_map.minimum_route_cost(3, 10), 94);
+    assert_eq!(city_map.minimum_route_cost(1, 3), 102);
+}
+
+#[test]
+fn part2_given_input() {
+    let input = "111111111111
+999999999991
+999999999991
+999999999991
+999999999991";
+
+    let city_map = CityMap::parse(input);
+    assert_eq!(city_map.minimum_route_cost(3, 10), 71);
 }
