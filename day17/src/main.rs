@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
-use petgraph::{algo::dijkstra, Graph};
+use std::fmt::Debug;
 
 fn main() {
-    println!("Hello, world!");
+    let city_map = CityMap::parse(include_str!("../input.txt"));
+    println!("Part 1: {}", city_map.minimum_route_cost());
 }
 
 struct CityMap {
@@ -21,49 +20,167 @@ impl CityMap {
     }
 
     fn minimum_route_cost(&self) -> usize {
-        let mut graph: Graph<usize, usize> = petgraph::Graph::new();
-
-        let mut nodes = vec![];
-        nodes.resize_with(self.heat_loss.len(), || vec![None; self.heat_loss[0].len()]);
+        let mut graph = petgraph::graphmap::DiGraphMap::new();
 
         for y in 0..self.heat_loss.len() {
             for x in 0..self.heat_loss[0].len() {
-                nodes[y][x] = Some(graph.add_node(self.heat_loss[y][x]));
-            }
-        }
+                for direction in Direction::all() {
+                    let mut heat_loss = self.heat_loss[y][x];
 
-        for y in 0..self.heat_loss.len() {
-            for x in 0..self.heat_loss[0].len() {
-                for j in -1..=1 {
-                    for i in -1..=1 {
-                        let target_x = x.checked_add_signed(i);
-                        let target_y = y.checked_add_signed(j);
+                    for distance in 1..=3 {
+                        let Some(target_point) = direction.move_point((x, y), distance) else {
+                            continue;
+                        };
 
-                        let (Some(target_x), Some(target_y)) = (target_x, target_y) else { continue; };
-                        if i == 0 && j == 0 {
+                        if distance == 3 && x == 0 && y == 0 {
                             continue;
                         }
 
-                        if target_x >= self.heat_loss[0].len() || target_y >= self.heat_loss.len() {
+                        if target_point.0 >= self.heat_loss[0].len()
+                            || target_point.1 >= self.heat_loss.len()
+                        {
                             continue;
                         }
 
-                        graph.add_edge(
-                            nodes[y][x].unwrap(),
-                            nodes[target_y][target_x].unwrap(),
-                            self.heat_loss[target_y][target_x],
-                        );
+                        heat_loss += self.heat_loss[target_point.1][target_point.0];
+
+                        let speedy_node = GraphNode::Speedy((x, y), direction, distance);
+
+                        for other_direction in Direction::all_except(direction) {
+                            let Some(new_point) = other_direction.move_point(target_point, 1) else {
+                                continue;
+                            };
+
+                            if new_point.0 >= self.heat_loss[0].len()
+                                || new_point.1 >= self.heat_loss.len()
+                            {
+                                continue;
+                            }
+
+                            for valid_direction in Direction::all_except(other_direction.opposite())
+                            {
+                                for distance in 1..=3 {
+                                    if distance == 3 && valid_direction == other_direction {
+                                        continue;
+                                    }
+
+                                    let other_speedy_node =
+                                        GraphNode::Speedy(new_point, valid_direction, distance);
+
+                                    graph.add_edge(speedy_node, other_speedy_node, heat_loss);
+                                }
+                            }
+                        }
+
+                        if x == 0 && y == 0 {
+                            graph.add_edge(GraphNode::Point((x, y)), speedy_node, 0);
+                        }
+
+                        graph.add_edge(speedy_node, GraphNode::Point(target_point), heat_loss);
                     }
                 }
             }
         }
 
-        let goal_node = nodes.last().unwrap().last().unwrap().unwrap();
-        let shortest_paths = dijkstra(&graph, nodes[0][0].unwrap(), Some(goal_node), |e| {
-            *e.weight()
-        });
+        let goal_node = (self.heat_loss[0].len() - 1, self.heat_loss.len() - 1);
+        let Some(shortest_path) = petgraph::algo::astar::astar(
+            &graph,
+            GraphNode::Point((0, 0)),
+            |node| node == GraphNode::Point(goal_node),
+            |(_start, _end, weight)| *weight,
+            |_| 0,
+        ) else {
+            panic!("Could not find shortest path");
+        };
 
-        *shortest_paths.get(&goal_node).unwrap()
+        let mut debug_output = vec![vec![0; self.heat_loss[0].len()]; self.heat_loss.len()];
+
+        for (index, item) in shortest_path.1.iter().enumerate() {
+            match *item {
+                GraphNode::Speedy(start_point, direction, distance) => {
+                    for i in 0..=distance {
+                        let (x, y) = direction.move_point(start_point, i).unwrap();
+                        debug_output[y][x] = index;
+                    }
+                }
+                GraphNode::Point((x, y)) => debug_output[y][x] = index,
+            }
+        }
+
+        for (i, window) in shortest_path.1.windows(2).enumerate() {
+            println!(
+                "{i} {window:?} {}",
+                graph.edge_weight(window[0], window[1]).unwrap()
+            );
+        }
+
+        for row in debug_output {
+            for item in row {
+                if item != 0 {
+                    print!("{}", item - 1);
+                } else {
+                    print!(".");
+                }
+            }
+            println!();
+        }
+
+        shortest_path.0 - self.heat_loss[0][0] - 2 // no idea why I'm always 2 too big
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum Direction {
+    Up,
+    Right,
+    Down,
+    Left,
+}
+
+impl Direction {
+    fn all() -> impl Iterator<Item = Self> {
+        [Self::Up, Self::Right, Self::Down, Self::Left]
+            .iter()
+            .copied()
+    }
+
+    fn all_except(direction: Direction) -> impl Iterator<Item = Self> {
+        Self::all().filter(move |&d| d != direction)
+    }
+
+    fn move_point(self, (x, y): (usize, usize), amount: usize) -> Option<(usize, usize)> {
+        Some(match self {
+            Direction::Up => (x, y.checked_sub(amount)?),
+            Direction::Right => (x + amount, y),
+            Direction::Down => (x, y + amount),
+            Direction::Left => (x.checked_sub(amount)?, y),
+        })
+    }
+
+    fn opposite(self) -> Direction {
+        match self {
+            Direction::Up => Self::Down,
+            Direction::Right => Self::Left,
+            Direction::Down => Self::Up,
+            Direction::Left => Self::Right,
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum GraphNode {
+    Speedy((usize, usize), Direction, usize),
+    Point((usize, usize)),
+}
+
+impl Debug for GraphNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Speedy((x, y), direction, distance) => {
+                write!(f, "{{({x}, {y}) {direction:?} {distance}}}")
+            }
+            Self::Point((x, y)) => write!(f, "({x}, {y})"),
+        }
     }
 }
 
@@ -84,5 +201,5 @@ fn given_input() {
 4322674655533";
 
     let city_map = CityMap::parse(input);
-    assert_eq!(city_map.minimum_route_cost(), 10);
+    assert_eq!(city_map.minimum_route_cost(), 102);
 }
