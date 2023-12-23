@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 fn main() {
     println!("Part 1: {}", part1(include_str!("../input.txt")));
+    println!("Part 2: {}", part2(include_str!("../input.txt")));
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -67,6 +68,7 @@ impl Brick {
     }
 }
 
+#[derive(Clone)]
 struct Sky {
     bricks: Vec<Brick>,
 }
@@ -78,8 +80,10 @@ impl Sky {
         Self { bricks }
     }
 
-    fn drop_everything(&mut self) {
+    fn drop_everything(&mut self) -> usize {
         self.bricks.sort_by_key(|brick| brick.height_from_ground());
+
+        let mut number_that_fell = 0;
 
         let mut floor_heights: HashMap<(usize, usize), usize> = HashMap::new();
 
@@ -94,41 +98,44 @@ impl Sky {
 
             brick.lower_by(drop_height);
 
+            if drop_height > 0 {
+                number_that_fell += 1;
+            }
+
             for pos in brick.project_down() {
                 floor_heights.insert(pos, brick.height_of_top() + 1);
             }
         }
+
+        number_that_fell
     }
 
     fn disintegratable_blocks(&mut self) -> usize {
         let mut count = 0;
         self.bricks.sort_by_key(|brick| brick.height_from_ground());
 
-        'outer: for (i, brick_to_remove) in self.bricks.iter().enumerate() {
-            for (test_brick_index, test_brick) in self.bricks.iter().enumerate().skip(i) {
-                // check that test_brick can still stand somewhere
-
-                // only need to actually check it if it touches the removed one
-                if test_brick.height_from_ground() == brick_to_remove.height_of_top() + 1 {
-                    // there is a chance this one could fall, check if something else could hold it
-                    let z = test_brick.height_from_ground() - 1;
-
-                    if !test_brick.project_down().any(|(x, y)| {
-                        self.bricks[..test_brick_index].iter().enumerate().any(
-                            |(check_index, brick_to_check)| {
-                                check_index != i && brick_to_check.contains_point([x, y, z])
-                            },
-                        )
-                    }) {
-                        continue 'outer;
-                    }
-                }
+        for (i, _) in self.bricks.iter().enumerate() {
+            if self.number_of_blocks_that_would_fall(i) == 0 {
+                count += 1;
             }
-
-            count += 1;
         }
 
         count
+    }
+
+    fn chain_reaction(&mut self) -> usize {
+        self.bricks.sort_by_key(|brick| brick.height_from_ground());
+
+        (0..self.bricks.len())
+            .map(|i| self.number_of_blocks_that_would_fall(i))
+            .sum::<usize>()
+    }
+
+    fn number_of_blocks_that_would_fall(&self, brick_index: usize) -> usize {
+        let mut dupe_sky = self.clone();
+        dupe_sky.bricks.swap_remove(brick_index);
+
+        dupe_sky.drop_everything()
     }
 }
 
@@ -138,6 +145,14 @@ fn part1(input: &str) -> usize {
     sky.drop_everything();
 
     sky.disintegratable_blocks()
+}
+
+fn part2(input: &str) -> usize {
+    let mut sky = Sky::parse(input);
+
+    sky.drop_everything();
+
+    sky.chain_reaction()
 }
 
 #[test]
@@ -153,5 +168,21 @@ fn part1_given_input() {
 1,1,8~1,1,9"
         ),
         5
+    );
+}
+
+#[test]
+fn part2_given_input() {
+    assert_eq!(
+        part2(
+            "1,0,1~1,2,1
+0,0,2~2,0,2
+0,2,3~2,2,3
+0,0,4~0,2,4
+2,0,5~2,2,5
+0,1,6~2,1,6
+1,1,8~1,1,9"
+        ),
+        7
     );
 }
