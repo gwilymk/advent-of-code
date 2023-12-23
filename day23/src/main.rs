@@ -4,8 +4,17 @@ fn main() {
     let forest = Forest::parse(include_str!("../input.txt"));
     println!(
         "Part 1: {}",
-        forest.longest_walk(Point(1, 0), &HashSet::new()).unwrap()
-    )
+        forest
+            .longest_walk(Point(1, 0), &HashSet::new(), true)
+            .unwrap()
+    );
+
+    println!(
+        "Part 2: {}",
+        forest
+            .longest_walk(Point(1, 0), &HashSet::new(), false)
+            .unwrap()
+    );
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -61,7 +70,12 @@ impl Forest {
         Self { tiles }
     }
 
-    fn longest_walk(&self, start_point: Point, visited: &HashSet<Point>) -> Option<usize> {
+    fn longest_walk(
+        &self,
+        start_point: Point,
+        visited: &HashSet<Point>,
+        slippy_slopes: bool,
+    ) -> Option<usize> {
         let mut visited = visited.clone();
 
         let mut current_point = start_point;
@@ -87,7 +101,7 @@ impl Forest {
                 }
 
                 if let Tile::SteepSlop(slope_direction) = tile {
-                    if slope_direction != direction {
+                    if slope_direction != direction && slippy_slopes {
                         continue;
                     }
                 }
@@ -107,7 +121,9 @@ impl Forest {
             if points_to_check.len() > 1 {
                 return points_to_check
                     .iter()
-                    .filter_map(|&new_start_point| self.longest_walk(new_start_point, &visited))
+                    .filter_map(|&new_start_point| {
+                        self.longest_walk(new_start_point, &visited, slippy_slopes)
+                    })
                     .max()
                     .map(|value| value + amount_to_add);
             }
@@ -138,7 +154,7 @@ impl Point {
 }
 
 #[test]
-fn part1_given_input() {
+fn given_input() {
     let forest = Forest::parse(
         "#.#####################
 #.......#########...###
@@ -165,5 +181,13 @@ fn part1_given_input() {
 #####################.#",
     );
 
-    assert_eq!(forest.longest_walk(Point(1, 0), &HashSet::new()), Some(94));
+    assert_eq!(
+        forest.longest_walk(Point(1, 0), &HashSet::new(), true),
+        Some(94)
+    );
+
+    assert_eq!(
+        forest.longest_walk(Point(1, 0), &HashSet::new(), false),
+        Some(154)
+    );
 }
