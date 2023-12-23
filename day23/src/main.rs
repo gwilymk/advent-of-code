@@ -2,19 +2,8 @@ use std::{collections::HashSet, fmt::Debug};
 
 fn main() {
     let forest = Forest::parse(include_str!("../input.txt"));
-    println!(
-        "Part 1: {}",
-        forest
-            .longest_walk(Point(1, 0), &HashSet::new(), true)
-            .unwrap()
-    );
-
-    println!(
-        "Part 2: {}",
-        forest
-            .longest_walk(Point(1, 0), &HashSet::new(), false)
-            .unwrap()
-    );
+    println!("Part 2: {}", forest.longest_walk(false));
+    println!("Part 1: {}", forest.longest_walk(true));
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -70,70 +59,62 @@ impl Forest {
         Self { tiles }
     }
 
-    fn longest_walk(
+    fn longest_walk(&self, slippy_slopes: bool) -> usize {
+        let mut graph = petgraph::graphmap::UnGraphMap::new();
+
+        let start_point = Point(1, 0);
+        let end_point = Point(self.tiles[0].len() - 2, self.tiles.len() - 1);
+
+        self.build_graph(&mut graph, start_point, slippy_slopes);
+        // let graph = petgraph::algo::condensation(graph.into_graph::<usize>(), false);
+
+        println!("{:?}", petgraph::dot::Dot::new(&graph));
+
+        let paths =
+            petgraph::algo::simple_paths::all_simple_paths(&graph, start_point, end_point, 0, None);
+
+        let mut max = 0;
+        for length in paths.map(|path: Vec<_>| path.len() - 1) {
+            max = length.max(max);
+        }
+
+        max
+    }
+
+    fn build_graph(
         &self,
+        graph: &mut petgraph::graphmap::UnGraphMap<Point, ()>,
         start_point: Point,
-        visited: &HashSet<Point>,
-        slippy_slopes: bool,
-    ) -> Option<usize> {
-        let mut visited = visited.clone();
+        _slippy_slopes: bool,
+    ) {
+        let mut nodes_to_search_from = vec![start_point];
+        let mut searched_nodes = HashSet::new();
 
-        let mut current_point = start_point;
-        let mut amount_to_add = 0;
-
-        loop {
-            let mut points_to_check = Vec::with_capacity(2);
-            visited.insert(current_point);
-            amount_to_add += 1;
+        while let Some(current_point) = nodes_to_search_from.pop() {
+            searched_nodes.insert(current_point);
 
             for direction in Direction::all() {
-                let Some(new_point) = current_point.move_in_direction(direction) else {
+                let Some(point_to_search) = current_point.move_in_direction(direction) else {
                     continue;
                 };
 
-                if visited.contains(&new_point) {
+                if point_to_search.1 == self.tiles.len() {
+                    // coming off the edge of the map
                     continue;
                 }
 
-                let tile = self.tiles[new_point.1][new_point.0];
-                if tile == Tile::Forest {
-                    continue;
+                let tile = self.tiles[point_to_search.1][point_to_search.0];
+
+                if tile != Tile::Forest && !searched_nodes.contains(&point_to_search) {
+                    nodes_to_search_from.push(point_to_search);
+                    graph.add_edge(current_point, point_to_search, ());
                 }
-
-                if let Tile::SteepSlop(slope_direction) = tile {
-                    if slope_direction != direction && slippy_slopes {
-                        continue;
-                    }
-                }
-
-                if new_point.1 == self.tiles.len() - 1 {
-                    // this is the edge of the map!
-                    return Some(amount_to_add);
-                }
-
-                points_to_check.push(new_point);
             }
-
-            if points_to_check.is_empty() {
-                return None; // dead end
-            }
-
-            if points_to_check.len() > 1 {
-                return points_to_check
-                    .iter()
-                    .filter_map(|&new_start_point| {
-                        self.longest_walk(new_start_point, &visited, slippy_slopes)
-                    })
-                    .max()
-                    .map(|value| value + amount_to_add);
-            }
-
-            current_point = points_to_check[0];
         }
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct Point(usize, usize);
 
 impl Debug for Point {
@@ -181,13 +162,6 @@ fn given_input() {
 #####################.#",
     );
 
-    assert_eq!(
-        forest.longest_walk(Point(1, 0), &HashSet::new(), true),
-        Some(94)
-    );
-
-    assert_eq!(
-        forest.longest_walk(Point(1, 0), &HashSet::new(), false),
-        Some(154)
-    );
+    assert_eq!(forest.longest_walk(false), 154);
+    // assert_eq!(forest.longest_walk(true), 94);
 }

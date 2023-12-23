@@ -131,6 +131,9 @@ dependencies = [
 [[package]]
 name = "day23"
 version = "0.1.0"
+dependencies = [
+ "petgraph",
+]
 
 [[package]]
 name = "day3"
