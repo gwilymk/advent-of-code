@@ -1,6 +1,7 @@
 fn main() {
     let input = include_str!("../input.txt");
-    println!("Part 1: {}", part1(input));
+    println!("Part 1: {}", area(input, InputParseStyle::Part1));
+    println!("Part 2: {}", area(input, InputParseStyle::Part2));
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
@@ -11,7 +12,7 @@ struct Ground {
     digger_position: (isize, isize),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 enum Direction {
     Up,
     Down,
@@ -84,33 +85,60 @@ impl Ground {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct Instruction(Direction, isize);
 
 impl Instruction {
-    fn parse(line: &str) -> Self {
+    fn parse(line: &str, input_parse_style: InputParseStyle) -> Self {
         let mut split = line.split(' ');
 
-        let direction = match split.next().unwrap() {
-            "R" => Direction::Right,
-            "U" => Direction::Up,
-            "D" => Direction::Down,
-            "L" => Direction::Left,
-            c => panic!("Unknown direction {c}"),
-        };
+        match input_parse_style {
+            InputParseStyle::Part1 => {
+                let direction = match split.next().unwrap() {
+                    "R" => Direction::Right,
+                    "U" => Direction::Up,
+                    "D" => Direction::Down,
+                    "L" => Direction::Left,
+                    c => panic!("Unknown direction {c}"),
+                };
 
-        let distance = split.next().unwrap().parse().unwrap();
+                let distance = split.next().unwrap().parse().unwrap();
 
-        Self(direction, distance)
+                Self(direction, distance)
+            }
+            InputParseStyle::Part2 => {
+                let instruction = split.skip(2).next().unwrap();
+
+                let distance = isize::from_str_radix(&instruction[2..7], 16).unwrap();
+                let direction = match instruction.chars().nth(7).unwrap() {
+                    '0' => Direction::Right,
+                    '1' => Direction::Down,
+                    '2' => Direction::Left,
+                    '3' => Direction::Up,
+                    c => panic!("Unknown direction {c} in instruction {instruction}"),
+                };
+
+                Self(direction, distance)
+            }
+        }
     }
 
-    fn parse_all_input(input: &str) -> Vec<Instruction> {
-        input.lines().map(Instruction::parse).collect()
+    fn parse_all_input(input: &str, input_parse_style: InputParseStyle) -> Vec<Instruction> {
+        input
+            .lines()
+            .map(|line| Instruction::parse(line, input_parse_style))
+            .collect()
     }
 }
 
-fn part1(input: &str) -> usize {
-    let instructions = Instruction::parse_all_input(input);
+#[derive(Clone, Copy)]
+enum InputParseStyle {
+    Part1,
+    Part2,
+}
+
+fn area(input: &str, input_parsing_style: InputParseStyle) -> usize {
+    let instructions = Instruction::parse_all_input(input, input_parsing_style);
 
     let mut ground = Ground::new();
 
@@ -138,5 +166,6 @@ U 3 (#a77fa3)
 L 2 (#015232)
 U 2 (#7a21e3)";
 
-    assert_eq!(part1(input), 62);
+    assert_eq!(area(input, InputParseStyle::Part1), 62);
+    assert_eq!(area(input, InputParseStyle::Part2), 952408144115);
 }
