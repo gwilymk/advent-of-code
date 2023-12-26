@@ -68,8 +68,6 @@ impl<'a> SnowMachine<'a> {
                 .map(|&node| *graph_result.node_weight(node).unwrap())
                 .collect::<HashSet<_>>();
 
-            println!("{} {}", first_batch.len(), second_batch.len());
-
             let mut edges_removed = vec![];
 
             for &item in first_batch {
@@ -83,8 +81,6 @@ impl<'a> SnowMachine<'a> {
                     edges_removed.push((node_name, neighbour_in_second_batch));
                 }
             }
-
-            println!("{edges_removed:?}");
 
             if edges_removed.len() == 3 {
                 return first_batch.len() * second_batch.len();
