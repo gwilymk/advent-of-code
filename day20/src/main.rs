@@ -1,15 +1,29 @@
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    fmt::Debug,
+};
 
 fn main() {
     let mut machines = SandMachines::parse(include_str!("../input.txt"));
 
+    let part2 = part2(&machines);
     println!("Part 1: {}", part1(&mut machines));
+    println!("Part 2: {part2}");
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum Signal {
     HighPulse,
     LowPulse,
+}
+
+impl Debug for Signal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::HighPulse => write!(f, "+"),
+            Self::LowPulse => write!(f, "-"),
+        }
+    }
 }
 
 impl std::ops::Not for Signal {
@@ -56,16 +70,21 @@ impl<'a> ModuleParse<'a> {
     }
 }
 
+#[derive(Clone)]
 enum SandMachineType {
     Broadcaster,
     FlipFlop(Signal),
     Conjunction(Vec<Signal>),
 }
 
+#[derive(Clone)]
 struct SandMachines {
     machines: Vec<SandMachineType>,
     broadcast_index: usize,
+    rx_index: Option<usize>,
     graph: petgraph::graphmap::DiGraphMap<usize, ()>,
+
+    conjunction_loops: HashMap<usize, usize>,
 }
 
 impl SandMachines {
@@ -114,14 +133,19 @@ impl SandMachines {
             .position(|machine| matches!(machine, SandMachineType::Broadcaster))
             .unwrap();
 
+        let rx_index = Some(module_parse.len());
+
         Self {
             graph,
             machines,
             broadcast_index,
+            rx_index,
+
+            conjunction_loops: HashMap::new(),
         }
     }
 
-    fn push_button(&mut self) -> (usize, usize) {
+    fn push_button(&mut self, loop_count: usize) -> (usize, usize) {
         let mut pulse_queue = VecDeque::new();
         pulse_queue.push_back((self.broadcast_index, Signal::LowPulse, self.broadcast_index));
 
@@ -165,6 +189,9 @@ impl SandMachines {
                     state[sender] = pulse;
 
                     let pulse_to_send = if state.iter().all(|&signal| signal == Signal::HighPulse) {
+                        self.conjunction_loops
+                            .entry(module_index)
+                            .or_insert(loop_count);
                         Signal::LowPulse
                     } else {
                         Signal::HighPulse
@@ -183,19 +210,75 @@ impl SandMachines {
 
         (low_pulses_sent, high_pulses_sent)
     }
+
+    fn presses_until_rx(&self) -> usize {
+        let mut test_instance = self.clone();
+
+        let input_to_rx = self
+            .graph
+            .neighbors_directed(self.rx_index.unwrap(), petgraph::Direction::Incoming)
+            .next()
+            .unwrap();
+
+        let input_to_input = self
+            .graph
+            .neighbors_directed(input_to_rx, petgraph::Direction::Incoming)
+            .flat_map(|neighbour| {
+                self.graph
+                    .neighbors_directed(neighbour, petgraph::Direction::Incoming)
+            })
+            .collect::<Vec<_>>();
+
+        println!("{input_to_input:?}");
+
+        let mut input_times = HashMap::with_capacity(input_to_input.len());
+
+        for button_push in 1.. {
+            test_instance.push_button(button_push);
+
+            for &input in &input_to_input {
+                // println!("{button_push} {state:?}");
+                if let Some(loop_) = test_instance.conjunction_loops.get(&input) {
+                    input_times.entry(input).or_insert(*loop_);
+                }
+            }
+
+            if input_times.len() == input_to_input.len() {
+                break;
+            }
+        }
+
+        input_times.values().copied().fold(1, lcm)
+    }
+}
+
+fn lcm(a: usize, b: usize) -> usize {
+    a * b / gcd(a, b)
+}
+
+fn gcd(a: usize, b: usize) -> usize {
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a % b)
+    }
 }
 
 fn part1(machines: &mut SandMachines) -> usize {
     let mut total_high = 0;
     let mut total_low = 0;
 
-    for _ in 0..1000 {
-        let (lows, highs) = machines.push_button();
+    for i in 1..1000 {
+        let (lows, highs) = machines.push_button(i);
         total_high += highs;
         total_low += lows;
     }
 
     total_high * total_low
+}
+
+fn part2(machines: &SandMachines) -> usize {
+    machines.presses_until_rx()
 }
 
 #[test]
@@ -208,7 +291,7 @@ fn given_input1() {
 &inv -> a",
     );
 
-    assert_eq!(machine.push_button(), (8, 4));
+    assert_eq!(machine.push_button(1), (8, 4));
 }
 
 #[test]
