@@ -229,15 +229,12 @@ impl SandMachines {
             })
             .collect::<Vec<_>>();
 
-        println!("{input_to_input:?}");
-
         let mut input_times = HashMap::with_capacity(input_to_input.len());
 
         for button_push in 1.. {
             test_instance.push_button(button_push);
 
             for &input in &input_to_input {
-                // println!("{button_push} {state:?}");
                 if let Some(loop_) = test_instance.conjunction_loops.get(&input) {
                     input_times.entry(input).or_insert(*loop_);
                 }
