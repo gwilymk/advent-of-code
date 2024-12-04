@@ -5,6 +5,31 @@ fn main() {
         .collect::<Vec<_>>();
 
     println!("part1: {}", wordsearch(&parsed));
+    println!("part2: {}", x_mas(&parsed));
+}
+
+fn x_mas(input: &[Vec<u8>]) -> usize {
+    let mut count = 0;
+
+    for y in 0..input.len() {
+        for x in 0..input[y].len() {
+            let Some(first_cross) = word_in_direction(input, x, y, 1, 1) else {
+                continue;
+            };
+
+            let Some(second_cross) = word_in_direction(input, x + 2, y, -1, 1) else {
+                continue;
+            };
+
+            if (&first_cross == b"MAS" || &first_cross == b"SAM")
+                && (&second_cross == b"MAS" || &second_cross == b"SAM")
+            {
+                count += 1;
+            }
+        }
+    }
+
+    count
 }
 
 fn wordsearch(input: &[Vec<u8>]) -> usize {
@@ -43,19 +68,19 @@ fn check_xmas(input: &[Vec<u8>], x: usize, y: usize) -> usize {
     count
 }
 
-fn word_in_direction(
+fn word_in_direction<const LEN: usize>(
     input: &[Vec<u8>],
     start_x: usize,
     start_y: usize,
     dx: isize,
     dy: isize,
-) -> Option<[u8; 4]> {
-    let mut output = [0; 4];
+) -> Option<[u8; LEN]> {
+    let mut output = [0; LEN];
 
-    for i in 0..4 {
-        output[i as usize] = *input
-            .get(start_y.checked_add_signed(dy * i)?)?
-            .get(start_x.checked_add_signed(dx * i)?)?;
+    for (i, value) in output.iter_mut().enumerate() {
+        *value = *input
+            .get(start_y.checked_add_signed(dy * i as isize)?)?
+            .get(start_x.checked_add_signed(dx * i as isize)?)?;
     }
 
     Some(output)
@@ -63,9 +88,7 @@ fn word_in_direction(
 
 #[test]
 fn given_input() {
-    assert_eq!(
-        wordsearch(
-            &b"MMMSXXMASM
+    let parsed = b"MMMSXXMASM
 MSAMXMSMSA
 AMXSXMAAMM
 MSAMASMSMX
@@ -75,10 +98,10 @@ SMSMSASXSS
 SAXAMASAAA
 MAMMMXMMMM
 MXMXAXMASX"
-                .split(|&c| c == b'\n')
-                .map(|line| line.to_vec())
-                .collect::<Vec<_>>()
-        ),
-        18
-    );
+        .split(|&c| c == b'\n')
+        .map(|line| line.to_vec())
+        .collect::<Vec<_>>();
+
+    assert_eq!(wordsearch(&parsed), 18);
+    assert_eq!(x_mas(&parsed), 9);
 }
