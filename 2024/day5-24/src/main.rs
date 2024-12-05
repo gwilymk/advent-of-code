@@ -4,6 +4,7 @@ fn main() {
     let puzzle_input = include_str!("input.txt");
     let input = Input::parse(puzzle_input);
     println!("part 1: {}", part1(&input));
+    println!("part 2: {}", part2(&input));
 }
 
 struct Input {
@@ -43,6 +44,29 @@ impl Input {
 fn part1(input: &Input) -> usize {
     valid_updates(input)
         .map(|update| update[update.len() / 2])
+        .sum()
+}
+
+fn part2(input: &Input) -> usize {
+    input
+        .updates
+        .iter()
+        .filter(|update| !update_is_in_order(update, &input.orderings))
+        .map(|incorrect| {
+            let mut working = incorrect.to_vec();
+
+            while !update_is_in_order(&working, &input.orderings) {
+                for i in 0..incorrect.len() {
+                    for j in i + 1..incorrect.len() {
+                        if input.orderings.contains(&(working[j], working[i])) {
+                            working.swap(i, j);
+                        }
+                    }
+                }
+            }
+
+            working[working.len() / 2]
+        })
         .sum()
 }
 
@@ -99,4 +123,5 @@ fn given_input() {
     );
 
     assert_eq!(part1(&input), 143);
+    assert_eq!(part2(&input), 123);
 }
