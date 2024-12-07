@@ -19,15 +19,17 @@ fn recursive_solvable_equation(expected_result: i64, inputs: &[i64], include_con
         return true;
     }
 
-    if recursive_solvable_equation(
-        expected_result - test_value,
-        &inputs[..inputs.len() - 1],
-        include_concat,
-    ) {
+    if expected_result >= test_value
+        && recursive_solvable_equation(
+            expected_result - test_value,
+            &inputs[..inputs.len() - 1],
+            include_concat,
+        )
+    {
         return true;
     }
 
-    if include_concat && expected_result > 0 {
+    if include_concat {
         let expected_result_as_str = expected_result.to_string();
         let concat_amount = test_value.to_string();
 
