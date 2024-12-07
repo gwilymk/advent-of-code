@@ -1,28 +1,35 @@
 fn main() {
-    println!("Part 1: {}", num_solvable(include_str!("input.txt")));
+    println!("Part 1: {}", num_solvable(include_str!("input.txt"), false));
 }
 
-fn solvable_equation(expected_result: i64, inputs: &[i64]) -> bool {
-    for i in 0..(1 << (inputs.len() - 1)) {
-        let mut current = inputs[0];
+fn recursive_solvable_equation(expected_result: i64, inputs: &[i64], include_concat: bool) -> bool {
+    if inputs.len() == 1 {
+        return expected_result == inputs[0];
+    }
 
-        for bit in 0..(inputs.len() - 1) {
-            if i & (1 << bit) == 0 {
-                current += inputs[bit + 1];
-            } else {
-                current *= inputs[bit + 1];
-            }
-        }
+    let test_value = inputs[inputs.len() - 1];
+    if expected_result % test_value == 0
+        && recursive_solvable_equation(
+            expected_result / test_value,
+            &inputs[..inputs.len() - 1],
+            include_concat,
+        )
+    {
+        return true;
+    }
 
-        if current == expected_result {
-            return true;
-        }
+    if recursive_solvable_equation(
+        expected_result - test_value,
+        &inputs[..inputs.len() - 1],
+        include_concat,
+    ) {
+        return true;
     }
 
     false
 }
 
-fn num_solvable(input: &str) -> i64 {
+fn num_solvable(input: &str, include_concat: bool) -> i64 {
     input
         .split('\n')
         .filter_map(|line| {
@@ -33,7 +40,7 @@ fn num_solvable(input: &str) -> i64 {
                 .map(|n| n.parse::<_>().unwrap())
                 .collect::<Vec<_>>();
 
-            if solvable_equation(answer, &question) {
+            if recursive_solvable_equation(answer, &question, include_concat) {
                 Some(answer)
             } else {
                 None
@@ -54,7 +61,8 @@ fn given_input() {
 161011: 16 10 13
 192: 17 8 14
 21037: 9 7 18 13
-292: 11 6 16 20"
+292: 11 6 16 20",
+            false
         ),
         3749
     );
