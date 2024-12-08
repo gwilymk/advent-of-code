@@ -3,6 +3,27 @@
 version = 3
 
 [[package]]
+name = "agb_fixnum"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85f34b72407c42d911bf88d4934ceadd97741ac851e1edd6105265a8db00e03f"
+dependencies = [
+ "agb_macros",
+ "num-traits",
+]
+
+[[package]]
+name = "agb_macros"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c99c2a624219134f8265f6da0b0d526fe16dae57710f189e67cb7721cf6a3815"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -113,7 +134,7 @@ name = "day17"
 version = "0.1.0"
 dependencies = [
  "colored",
- "itertools",
+ "itertools 0.12.0",
  "petgraph",
 ]
 
@@ -152,7 +173,7 @@ version = "0.1.0"
 name = "day22"
 version = "0.1.0"
 dependencies = [
- "itertools",
+ "itertools 0.12.0",
 ]
 
 [[package]]
@@ -166,7 +187,7 @@ dependencies = [
 name = "day24"
 version = "0.1.0"
 dependencies = [
- "itertools",
+ "itertools 0.12.0",
 ]
 
 [[package]]
@@ -228,6 +249,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "day8-24"
+version = "0.1.0"
+dependencies = [
+ "agb_fixnum",
+ "itertools 0.13.0",
+]
+
+[[package]]
 name = "day9"
 version = "0.1.0"
 
@@ -281,6 +310,15 @@ name = "itertools"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25db6b064527c5d482d0423354fcd07a89a2dfe07b67892e62411946db7f07b0"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -411,6 +449,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
+name = "proc-macro2"
+version = "1.0.92"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37d3544b3f2748c54e147655edb5025752e2303145b5aefb3c3ea2c78b973bb0"
+dependencies = [
+ "unicode-ident",
+]
+
+[[package]]
+name = "quote"
+version = "1.0.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5b9d34b8991d19d98081b46eacdd8eb58c6f2b201139f7c5f643cc155a633af"
+dependencies = [
+ "proc-macro2",
+]
+
+[[package]]
 name = "rand"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -494,6 +550,23 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "syn"
+version = "2.0.90"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "919d3b74a5dd0ccd15aeb8f93e7006bd9e14c295087c9896a110f490752bcf31"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
+
+[[package]]
+name = "unicode-ident"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
 
 [[package]]
 name = "wasi"
