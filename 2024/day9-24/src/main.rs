@@ -3,10 +3,14 @@ fn main() {
 
     disk.compact();
     println!("Part 1: {}", disk.checksum());
+
+    let mut disk2 = part2::Disk::parse(include_str!("input.txt"));
+    disk2.deframent();
+    println!("Part 2: {}", disk2.checksum());
 }
 
 mod part2 {
-    use std::fmt::Debug;
+    use std::{collections::HashSet, fmt::Debug};
 
     #[derive(Clone, Copy, PartialEq, Eq)]
     enum DiskBlock {
@@ -41,82 +45,53 @@ mod part2 {
         }
 
         pub fn deframent(&mut self) {
-            let mut current = 0;
-            while current < self.blocks.len() {
-                let DiskBlock::Free { len } = self.blocks[current] else {
-                    current += 1;
+            let mut searched_indexes: HashSet<usize> = HashSet::new();
+
+            let mut file_index = self.blocks.len() - 1;
+
+            while file_index > 0 {
+                let DiskBlock::File { id, len } = self.blocks[file_index] else {
+                    file_index -= 1;
                     continue;
                 };
 
-                if len == 0 {
-                    current += 1;
+                if searched_indexes.contains(&id) {
+                    file_index -= 1;
                     continue;
                 }
 
-                // find the last file that will fit here
-                let Some(mut file_index) =
+                searched_indexes.insert(id);
+
+                let Some(free_index) =
                     self.blocks
                         .iter()
-                        .enumerate()
-                        .rev()
-                        .position(|(index, block)| {
-                            if index < current {
-                                return false;
-                            }
-
-                            let DiskBlock::File { len: file_len, .. } = block else {
-                                return false;
-                            };
-
-                            *file_len <= len
+                        .take(file_index)
+                        .position(|block| match block {
+                            DiskBlock::File { .. } => false,
+                            DiskBlock::Free { len: free_len } => *free_len >= len,
                         })
                 else {
-                    current += 1;
+                    file_index -= 1;
                     continue;
                 };
 
-                file_index = self.blocks.len() - file_index - 1;
-
-                let DiskBlock::File {
-                    id: file_id,
-                    len: file_len,
-                } = self.blocks[file_index]
-                else {
-                    panic!("Just found this")
+                let DiskBlock::Free { len: free_len } = self.blocks[free_index] else {
+                    panic!("just found this");
                 };
 
-                // need to mark the old space as free, just before and just after will be empty
-                let DiskBlock::Free { len: before_len } = self.blocks[file_index - 1] else {
-                    panic!("should alternate free and full");
-                };
-
-                let DiskBlock::Free { len: after_len } = self.blocks[file_index + 1] else {
-                    panic!("should alternate free and full")
-                };
-
-                let new_free = DiskBlock::Free {
-                    len: before_len + file_len + after_len,
-                };
-                self.blocks.remove(file_index + 1);
-                self.blocks.remove(file_index);
-                self.blocks[file_index - 1] = new_free;
-
-                self.blocks[current] = DiskBlock::Free { len: 0 };
-                self.blocks.insert(
-                    current + 1,
-                    DiskBlock::File {
-                        id: file_id,
-                        len: file_len,
-                    },
-                );
-                self.blocks.insert(
-                    current + 2,
-                    DiskBlock::Free {
-                        len: len - file_len,
-                    },
-                );
-
-                println!("{self:?}");
+                if free_len == len {
+                    self.blocks.swap(free_index, file_index);
+                    file_index -= 1;
+                } else {
+                    self.blocks[file_index] = DiskBlock::Free { len };
+                    self.blocks[free_index] = DiskBlock::File { id, len };
+                    self.blocks.insert(
+                        free_index + 1,
+                        DiskBlock::Free {
+                            len: free_len - len,
+                        },
+                    );
+                }
             }
         }
 
