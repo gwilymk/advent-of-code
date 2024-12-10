@@ -2,7 +2,9 @@ use std::collections::HashSet;
 
 fn main() {
     let map = Map::parse(include_str!("input.txt"));
-    println!("part 1: {}", map.total_trailheads());
+    let result = map.total_trailheads();
+    println!("part 1: {}", result.0);
+    println!("part 2: {}", result.1);
 }
 
 struct Map {
@@ -22,7 +24,8 @@ impl Map {
         Self { heights }
     }
 
-    fn total_trailheads(&self) -> u32 {
+    // total trail heads, total rating
+    fn total_trailheads(&self) -> (u32, u32) {
         self.heights
             .iter()
             .enumerate()
@@ -36,42 +39,46 @@ impl Map {
 
                         let mut results = HashSet::new();
 
-                        self.trailheads_starting_at_point(x, y, &mut results);
-                        Some(results.len() as u32)
+                        let rating = self.trailheads_starting_at_point(x, y, &mut results);
+                        Some((results.len() as u32, rating))
                     })
-                    .sum::<u32>()
+                    .fold((0, 0), |acc, next| (acc.0 + next.0, acc.1 + next.1))
             })
-            .sum()
+            .fold((0, 0), |acc, next| (acc.0 + next.0, acc.1 + next.1))
     }
 
+    // returns the rating
     fn trailheads_starting_at_point(
         &self,
         start_x: usize,
         start_y: usize,
         results: &mut HashSet<(usize, usize)>,
-    ) {
+    ) -> u32 {
         let height = self.heights[start_y][start_x];
+        let mut total = 0;
 
         if height == 9 {
             results.insert((start_x, start_y));
-            return;
+            return 1;
         }
 
         if start_x > 0 && self.heights[start_y][start_x - 1] == height + 1 {
-            self.trailheads_starting_at_point(start_x - 1, start_y, results);
+            total += self.trailheads_starting_at_point(start_x - 1, start_y, results);
         }
 
         if start_y > 0 && self.heights[start_y - 1][start_x] == height + 1 {
-            self.trailheads_starting_at_point(start_x, start_y - 1, results);
+            total += self.trailheads_starting_at_point(start_x, start_y - 1, results);
         }
 
         if start_x < self.heights[0].len() - 1 && self.heights[start_y][start_x + 1] == height + 1 {
-            self.trailheads_starting_at_point(start_x + 1, start_y, results);
+            total += self.trailheads_starting_at_point(start_x + 1, start_y, results);
         }
 
         if start_y < self.heights.len() - 1 && self.heights[start_y + 1][start_x] == height + 1 {
-            self.trailheads_starting_at_point(start_x, start_y + 1, results);
+            total += self.trailheads_starting_at_point(start_x, start_y + 1, results);
         }
+
+        total
     }
 }
 
@@ -87,5 +94,5 @@ fn given_input() {
 01329801
 10456732",
     );
-    assert_eq!(map.total_trailheads(), 36);
+    assert_eq!(map.total_trailheads(), (36, 81));
 }
