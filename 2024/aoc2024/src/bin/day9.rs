@@ -1,10 +1,13 @@
+use aoc2024::get_input;
+
 fn main() {
-    let mut disk = part1::Disk::parse(include_str!("input.txt"));
+    let input = get_input(9);
+    let mut disk = part1::Disk::parse(&input);
 
     disk.compact();
     println!("Part 1: {}", disk.checksum());
 
-    let mut disk2 = part2::Disk::parse(include_str!("input.txt"));
+    let mut disk2 = part2::Disk::parse(&input);
     disk2.deframent();
     println!("Part 2: {}", disk2.checksum());
 }

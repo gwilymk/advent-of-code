@@ -1,5 +1,5 @@
 fn main() {
-    let input = include_str!("input.txt");
+    let input = aoc2024::get_input(2);
 
     let parsed = input
         .split('\n')

@@ -1,8 +1,9 @@
 use agb_fixnum::Vector2D;
+use aoc2024::get_input;
 use std::collections::{HashMap, HashSet};
 
 fn main() {
-    let map = Map::parse(include_str!("input.txt"));
+    let map = Map::parse(&get_input(8));
     println!("Part 1: {}", map.antinode_locations().len());
     println!("Part 2: {}", map.antinode_locations2().len());
 }

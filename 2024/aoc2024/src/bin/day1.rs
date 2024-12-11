@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
 fn main() {
-    println!("part1: {}", part1(include_str!("input.txt")));
-    println!("part2: {}", part2(include_str!("input.txt")));
+    let input = aoc2024::get_input(1);
+
+    println!("part1: {}", part1(&input));
+    println!("part2: {}", part2(&input));
 }
 
 fn parse(input: &str) -> (Vec<i64>, Vec<i64>) {

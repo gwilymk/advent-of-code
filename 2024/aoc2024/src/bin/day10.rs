@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 
+use aoc2024::get_input;
+
 fn main() {
-    let map = Map::parse(include_str!("input.txt"));
+    let map = Map::parse(&get_input(10));
     let result = map.total_trailheads();
     println!("part 1: {}", result.0);
     println!("part 2: {}", result.1);

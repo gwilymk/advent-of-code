@@ -1,6 +1,9 @@
+use aoc2024::get_input;
+
 fn main() {
-    println!("Part 1: {}", num_solvable(include_str!("input.txt"), false));
-    println!("Part 2: {}", num_solvable(include_str!("input.txt"), true));
+    let input = get_input(7);
+    println!("Part 1: {}", num_solvable(&input, false));
+    println!("Part 2: {}", num_solvable(&input, true));
 }
 
 fn recursive_solvable_equation(expected_result: i64, inputs: &[i64], include_concat: bool) -> bool {

@@ -1,9 +1,9 @@
 use regex::Regex;
 
 fn main() {
-    let input = include_str!("input.txt");
-    println!("part1: {}", execute(input, false));
-    println!("part2: {}", execute(input, true));
+    let input = aoc2024::get_input(3);
+    println!("part1: {}", execute(&input, false));
+    println!("part2: {}", execute(&input, true));
 }
 
 fn execute(input: &str, conditional_parsing: bool) -> i64 {

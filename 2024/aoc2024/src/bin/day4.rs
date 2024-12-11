@@ -1,5 +1,7 @@
 fn main() {
-    let parsed = include_bytes!("input.txt")
+    let input = aoc2024::get_input(4);
+    let parsed = input
+        .as_bytes()
         .split(|&c| c == b'\n')
         .map(|line| line.to_vec())
         .collect::<Vec<_>>();

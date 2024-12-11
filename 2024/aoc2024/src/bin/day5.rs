@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
 fn main() {
-    let puzzle_input = include_str!("input.txt");
-    let input = Input::parse(puzzle_input);
+    let puzzle_input = aoc2024::get_input(5);
+    let input = Input::parse(&puzzle_input);
     println!("part 1: {}", part1(&input));
     println!("part 2: {}", part2(&input));
 }

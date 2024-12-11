@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 
+use aoc2024::get_input;
+
 fn main() {
-    let input = Map::parse(include_str!("./input.txt"));
+    let input = Map::parse(&get_input(6));
     println!("Part 1: {}", positions(&input).len());
     println!("Part 2: {}", additional_obstruction_locations(&input));
 }

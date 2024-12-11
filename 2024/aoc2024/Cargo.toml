@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 agb_fixnum = "0.21.1"
 anyhow = "1.0.94"
+regex = "1.11.1"
 reqwest = { version = "0.12.9", features = ["blocking"] }

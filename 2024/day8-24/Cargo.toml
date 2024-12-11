@@ -1,8 +1,0 @@
-[package]
-name = "day8-24"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-agb_fixnum = "0.21"
-itertools = "0.13.0"
