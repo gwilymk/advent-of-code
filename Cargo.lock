@@ -193,19 +193,11 @@ name = "day1"
 version = "0.1.0"
 
 [[package]]
-name = "day1-24"
-version = "0.1.0"
-
-[[package]]
 name = "day10"
 version = "0.1.0"
 dependencies = [
  "rayon",
 ]
-
-[[package]]
-name = "day10-24"
-version = "0.1.0"
 
 [[package]]
 name = "day11"
@@ -239,7 +231,7 @@ name = "day17"
 version = "0.1.0"
 dependencies = [
  "colored",
- "itertools 0.12.0",
+ "itertools",
  "petgraph",
 ]
 
@@ -260,10 +252,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "day2-24"
-version = "0.1.0"
-
-[[package]]
 name = "day20"
 version = "0.1.0"
 dependencies = [
@@ -278,7 +266,7 @@ version = "0.1.0"
 name = "day22"
 version = "0.1.0"
 dependencies = [
- "itertools 0.12.0",
+ "itertools",
 ]
 
 [[package]]
@@ -292,7 +280,7 @@ dependencies = [
 name = "day24"
 version = "0.1.0"
 dependencies = [
- "itertools 0.12.0",
+ "itertools",
 ]
 
 [[package]]
@@ -308,18 +296,7 @@ name = "day3"
 version = "0.1.0"
 
 [[package]]
-name = "day3-24"
-version = "0.1.0"
-dependencies = [
- "regex",
-]
-
-[[package]]
 name = "day4"
-version = "0.1.0"
-
-[[package]]
-name = "day4-24"
 version = "0.1.0"
 
 [[package]]
@@ -327,23 +304,11 @@ name = "day5"
 version = "0.1.0"
 
 [[package]]
-name = "day5-24"
-version = "0.1.0"
-
-[[package]]
 name = "day6"
 version = "0.1.0"
 
 [[package]]
-name = "day6-24"
-version = "0.1.0"
-
-[[package]]
 name = "day7"
-version = "0.1.0"
-
-[[package]]
-name = "day7-24"
 version = "0.1.0"
 
 [[package]]
@@ -354,19 +319,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "day8-24"
-version = "0.1.0"
-dependencies = [
- "agb_fixnum",
- "itertools 0.13.0",
-]
-
-[[package]]
 name = "day9"
-version = "0.1.0"
-
-[[package]]
-name = "day9-24"
 version = "0.1.0"
 
 [[package]]
@@ -817,15 +770,6 @@ name = "itertools"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25db6b064527c5d482d0423354fcd07a89a2dfe07b67892e62411946db7f07b0"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
