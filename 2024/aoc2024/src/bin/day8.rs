@@ -1,5 +1,5 @@
 use agb_fixnum::Vector2D;
-use aoc2024::get_input;
+use aoc2024::{get_input, AllPairsExt};
 use std::collections::{HashMap, HashSet};
 
 fn main() {
@@ -74,34 +74,29 @@ impl Map {
         let mut antinode_locations = HashSet::new();
 
         for locations in self.nodes.values() {
-            for j in 0..locations.len() {
-                for i in (j + 1)..locations.len() {
-                    let first = locations[i];
-                    let second = locations[j];
+            for (first, second) in locations.all_pairs() {
+                let difference = second - first;
 
-                    let difference = second - first;
+                antinode_locations.insert(first);
+                antinode_locations.insert(second);
 
-                    antinode_locations.insert(first);
-                    antinode_locations.insert(second);
+                for i in 0.. {
+                    let antinode1 = first + difference * i;
+                    let antinode2 = first + difference * -i;
+                    let mut either_in_bounds = false;
 
-                    for i in 0.. {
-                        let antinode1 = first + difference * i;
-                        let antinode2 = first + difference * -i;
-                        let mut either_in_bounds = false;
+                    if self.is_in_bounds(antinode1) {
+                        antinode_locations.insert(antinode1);
+                        either_in_bounds = true;
+                    }
 
-                        if self.is_in_bounds(antinode1) {
-                            antinode_locations.insert(antinode1);
-                            either_in_bounds = true;
-                        }
+                    if self.is_in_bounds(antinode2) {
+                        antinode_locations.insert(antinode2);
+                        either_in_bounds = true;
+                    }
 
-                        if self.is_in_bounds(antinode2) {
-                            antinode_locations.insert(antinode2);
-                            either_in_bounds = true;
-                        }
-
-                        if !either_in_bounds {
-                            break;
-                        }
+                    if !either_in_bounds {
+                        break;
                     }
                 }
             }
