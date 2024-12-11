@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
 fn main() {
-    println!("Part 1: {}", blinks(include_str!("input.txt"), 25));
-    println!("Part 2: {}", blinks(include_str!("input.txt"), 75));
+    let input = aoc2024::get_input(11);
+
+    println!("Part 1: {}", blinks(&input, 25));
+    println!("Part 2: {}", blinks(&input, 75));
 }
 
 fn blinks(input: &str, blinks: usize) -> usize {
