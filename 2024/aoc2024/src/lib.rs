@@ -82,6 +82,17 @@ impl<T> Grid2<T> {
         self.neighbours_with_points(point, include_diagonals)
             .map(|(n, _)| n)
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = (Vector2D<i32>, &'_ T)> + '_
+    where
+        T: Clone,
+    {
+        self.points.iter().enumerate().flat_map(|(y, line)| {
+            line.iter()
+                .enumerate()
+                .map(move |(x, value)| (Vector2D::new(x as i32, y as i32), value))
+        })
+    }
 }
 
 pub trait AllPairsExt<Item> {

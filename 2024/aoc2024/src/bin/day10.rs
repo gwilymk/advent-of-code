@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use aoc2024::get_input;
+use aoc2024::{get_input, Grid2, Vector2D};
 
 fn main() {
     let map = Map::parse(&get_input(10));
@@ -10,19 +10,17 @@ fn main() {
 }
 
 struct Map {
-    heights: Vec<Vec<u32>>,
+    heights: Grid2<u32>,
 }
 
 impl Map {
     fn parse(input: &str) -> Self {
-        let heights = input
-            .split('\n')
-            .map(|line| {
-                line.chars()
-                    .map(|c| c.to_digit(10).unwrap())
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
+        let heights = Grid2::parse(input, |line| {
+            line.chars()
+                .map(|c| c.to_digit(10).unwrap())
+                .collect::<Vec<_>>()
+        });
+
         Self { heights }
     }
 
@@ -30,21 +28,15 @@ impl Map {
     fn total_trailheads(&self) -> (u32, u32) {
         self.heights
             .iter()
-            .enumerate()
-            .map(|(y, line)| {
-                line.iter()
-                    .enumerate()
-                    .filter_map(|(x, n)| {
-                        if *n != 0 {
-                            return None;
-                        }
+            .filter_map(|(point, n)| {
+                if *n != 0 {
+                    return None;
+                }
 
-                        let mut results = HashSet::new();
+                let mut results = HashSet::new();
 
-                        let rating = self.trailheads_starting_at_point(x, y, &mut results);
-                        Some((results.len() as u32, rating))
-                    })
-                    .fold((0, 0), |acc, next| (acc.0 + next.0, acc.1 + next.1))
+                let rating = self.trailheads_starting_at_point(point, &mut results);
+                Some((results.len() as u32, rating))
             })
             .fold((0, 0), |acc, next| (acc.0 + next.0, acc.1 + next.1))
     }
@@ -52,32 +44,21 @@ impl Map {
     // returns the rating
     fn trailheads_starting_at_point(
         &self,
-        start_x: usize,
-        start_y: usize,
-        results: &mut HashSet<(usize, usize)>,
+        point: Vector2D<i32>,
+        results: &mut HashSet<Vector2D<i32>>,
     ) -> u32 {
-        let height = self.heights[start_y][start_x];
+        let height = *self.heights.get::<i32>(point).unwrap();
         let mut total = 0;
 
         if height == 9 {
-            results.insert((start_x, start_y));
+            results.insert(point);
             return 1;
         }
 
-        if start_x > 0 && self.heights[start_y][start_x - 1] == height + 1 {
-            total += self.trailheads_starting_at_point(start_x - 1, start_y, results);
-        }
-
-        if start_y > 0 && self.heights[start_y - 1][start_x] == height + 1 {
-            total += self.trailheads_starting_at_point(start_x, start_y - 1, results);
-        }
-
-        if start_x < self.heights[0].len() - 1 && self.heights[start_y][start_x + 1] == height + 1 {
-            total += self.trailheads_starting_at_point(start_x + 1, start_y, results);
-        }
-
-        if start_y < self.heights.len() - 1 && self.heights[start_y + 1][start_x] == height + 1 {
-            total += self.trailheads_starting_at_point(start_x, start_y + 1, results);
+        for (value, location) in self.heights.neighbours_with_points::<i32>(point, false) {
+            if *value == height + 1 {
+                total += self.trailheads_starting_at_point(location, results);
+            }
         }
 
         total
