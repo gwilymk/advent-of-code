@@ -47,7 +47,7 @@ impl Map {
     fn antinode_locations(&self) -> HashSet<Vector2D<i32>> {
         let mut antinode_locations = HashSet::new();
 
-        for (_, locations) in &self.nodes {
+        for locations in self.nodes.values() {
             for j in 0..locations.len() {
                 for i in (j + 1)..locations.len() {
                     let first = locations[i];
@@ -73,7 +73,7 @@ impl Map {
     fn antinode_locations2(&self) -> HashSet<Vector2D<i32>> {
         let mut antinode_locations = HashSet::new();
 
-        for (_, locations) in &self.nodes {
+        for locations in self.nodes.values() {
             for j in 0..locations.len() {
                 for i in (j + 1)..locations.len() {
                     let first = locations[i];
