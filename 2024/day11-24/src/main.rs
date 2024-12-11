@@ -1,40 +1,62 @@
+use std::collections::HashMap;
+
 fn main() {
-    println!("Part 1: {}", part1(include_str!("input.txt")));
+    println!("Part 1: {}", blinks(include_str!("input.txt"), 25));
+    println!("Part 2: {}", blinks(include_str!("input.txt"), 75));
 }
 
-fn part1(input: &str) -> usize {
-    let mut stones = input
-        .split(' ')
-        .map(|i| i.parse::<usize>().unwrap())
-        .collect::<Vec<_>>();
+fn blinks(input: &str, blinks: usize) -> usize {
+    let stones = input.split(' ').map(|i| i.parse::<usize>().unwrap());
 
-    for _ in 0..25 {
-        let mut new_stones = vec![];
+    let mut cache = HashMap::new();
+    stones
+        .map(|stone| number_after_iterations(stone, blinks, &mut cache))
+        .sum()
+}
 
-        for stone in stones {
-            if stone == 0 {
-                new_stones.push(1);
-                continue;
-            }
-
-            let as_str = stone.to_string();
-            if as_str.len() % 2 == 0 {
-                let (first_half, second_half) = as_str.split_at(as_str.len() / 2);
-                new_stones.push(first_half.parse().unwrap());
-                new_stones.push(second_half.parse().unwrap());
-                continue;
-            }
-
-            new_stones.push(stone * 2024);
-        }
-
-        stones = new_stones;
+fn number_after_iterations(
+    stone: usize,
+    iterations_remaining: usize,
+    cache: &mut HashMap<(usize, usize), usize>,
+) -> usize {
+    if iterations_remaining == 0 {
+        return 1;
     }
 
-    stones.len()
+    if let Some(cached) = cache.get(&(stone, iterations_remaining)) {
+        return *cached;
+    }
+
+    if stone == 0 {
+        let result = number_after_iterations(1, iterations_remaining - 1, cache);
+        cache.insert((stone, iterations_remaining), result);
+        return result;
+    }
+
+    let as_str = stone.to_string();
+    if as_str.len() % 2 == 0 {
+        let (first_half, second_half) = as_str.split_at(as_str.len() / 2);
+
+        let first =
+            number_after_iterations(first_half.parse().unwrap(), iterations_remaining - 1, cache);
+        let second = number_after_iterations(
+            second_half.parse().unwrap(),
+            iterations_remaining - 1,
+            cache,
+        );
+
+        let result = first + second;
+        cache.insert((stone, iterations_remaining), result);
+        return result;
+    }
+
+    let result = number_after_iterations(stone * 2024, iterations_remaining - 1, cache);
+    cache.insert((stone, iterations_remaining), result);
+
+    result
 }
 
 #[test]
 fn given_input() {
-    assert_eq!(part1("125 17"), 55312);
+    assert_eq!(blinks("125 17", 25), 55312);
 }
