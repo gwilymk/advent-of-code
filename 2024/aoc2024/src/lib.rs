@@ -120,6 +120,32 @@ where
     }
 }
 
+pub fn gcd(mut a: u64, mut b: u64) -> u64 {
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+
+    a
+}
+
+/// Returns x, y, z such that:
+///
+/// a * x + b * y = gcd(a, b) = z
+pub fn extended_gcd(a: i64, b: i64) -> (i64, i64, i64) {
+    let (mut old_r, mut r) = (a, b);
+    let (mut old_s, mut s) = (1, 0);
+    let (mut old_t, mut t) = (0, 1);
+
+    while r != 0 {
+        let q = old_r / r;
+        (old_r, r) = (r, old_r - q * r);
+        (old_s, s) = (s, old_s - q * s);
+        (old_t, t) = (t, old_t - q * t);
+    }
+
+    (old_s, old_t, old_r)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -166,5 +192,19 @@ mod tests {
                 (4, 5)
             ]
         )
+    }
+
+    #[test]
+    fn gcd_test() {
+        assert_eq!(gcd(5, 7), 1);
+        assert_eq!(gcd(15, 21), 3);
+    }
+
+    #[test]
+    fn extended_gcd_test() {
+        let (x, y, z) = extended_gcd(240, 46);
+
+        assert_eq!(x * 240 + y * 46, z);
+        assert_eq!(z, gcd(240, 46) as i64);
     }
 }
