@@ -5,10 +5,10 @@ use regex::Regex;
 
 fn main() {
     let input = get_input(14);
-    println!("Part 1: {}", part1(&input, 101, 103));
+    let part2 = part2(&input, 101, 103);
 
-    // just need to see it
-    part2(&input, 101, 103);
+    println!("Part 1: {}", part1(&input, 101, 103));
+    println!("Part 2: {}", part2);
 }
 
 struct Robot {
@@ -61,11 +61,13 @@ fn part1(input: &str, width: i32, height: i32) -> u32 {
     quadrants.iter().product()
 }
 
-fn part2(input: &str, width: i32, height: i32) {
+fn part2(input: &str, width: i32, height: i32) -> u32 {
     let robots = input.split('\n').map(Robot::parse).collect::<Vec<_>>();
     let mut lowest_factor = i32::MAX;
+    let mut lowest_time = 0;
+    let mut lowest_map = vec![false; (width * height) as usize];
 
-    for time in 0.. {
+    for time in 0..10000 {
         let final_locations = robots
             .iter()
             .map(|robot| robot.final_location(time, width, height));
@@ -91,23 +93,24 @@ fn part2(input: &str, width: i32, height: i32) {
 
         if factor < lowest_factor {
             lowest_factor = factor;
-            println!("{time} {factor}");
-        } else {
-            continue;
+            lowest_time = time;
+            lowest_map = map;
         }
+    }
 
-        for y in 0..height {
-            for x in 0..width {
-                if map[(x + y * width) as usize] {
-                    print!("*");
-                } else {
-                    print!(" ");
-                }
+    for y in 0..height {
+        for x in 0..width {
+            if lowest_map[(x + y * width) as usize] {
+                print!("*");
+            } else {
+                print!(" ");
             }
-            println!();
         }
         println!();
     }
+    println!();
+
+    lowest_time
 }
 
 #[test]
