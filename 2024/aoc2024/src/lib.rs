@@ -1,3 +1,5 @@
+use std::mem;
+
 pub use agb_fixnum::*;
 
 mod input;
@@ -39,6 +41,21 @@ impl<T> Grid2<T> {
         let y = point.y.try_into().ok()?;
 
         self.points.get(y)?.get(x)
+    }
+
+    pub fn set<V: TryInto<usize> + agb_fixnum::FixedWidthUnsignedInteger>(
+        &mut self,
+        point: impl Into<Vector2D<V>>,
+        mut value: T,
+    ) -> Option<T> {
+        let point = point.into();
+
+        let x = point.x.try_into().ok()?;
+        let y = point.y.try_into().ok()?;
+
+        let current_value = self.points.get_mut(y)?.get_mut(x)?;
+        mem::swap(current_value, &mut value);
+        Some(value)
     }
 
     pub fn neighbours_with_points<V: TryInto<i32> + agb_fixnum::FixedWidthUnsignedInteger>(
