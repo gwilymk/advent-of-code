@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use aoc2024::get_input;
+use aoc2024::{get_input, Direction, Grid2, Vector2D};
 
 fn main() {
     let input = Map::parse(&get_input(6));
@@ -8,104 +8,42 @@ fn main() {
     println!("Part 2: {}", additional_obstruction_locations(&input));
 }
 
-#[derive(Clone, Copy, Hash, Eq, PartialEq, Debug)]
-struct Point {
-    x: isize,
-    y: isize,
-}
-
-impl Point {
-    fn in_direction(self, direction: Direction) -> Self {
-        match direction {
-            Direction::Up => Self {
-                x: self.x,
-                y: self.y - 1,
-            },
-            Direction::Right => Self {
-                x: self.x + 1,
-                y: self.y,
-            },
-            Direction::Down => Self {
-                x: self.x,
-                y: self.y + 1,
-            },
-            Direction::Left => Self {
-                x: self.x - 1,
-                y: self.y,
-            },
-        }
-    }
-}
-
-#[derive(Clone, Copy, Hash, Eq, PartialEq, Debug)]
-enum Direction {
-    Up,
-    Right,
-    Down,
-    Left,
-}
-
-impl Direction {
-    fn rotate_right(self: Direction) -> Self {
-        match self {
-            Direction::Up => Direction::Right,
-            Direction::Right => Direction::Down,
-            Direction::Down => Direction::Left,
-            Direction::Left => Direction::Up,
-        }
-    }
-}
-
 #[derive(Clone)]
 struct Map {
-    obstructions: Vec<Vec<bool>>,
-    position: Point,
+    obstructions: Grid2<bool>,
+    position: Vector2D<i32>,
     direction: Direction,
 }
 
 impl Map {
     fn parse(input: &str) -> Self {
-        let obstructions = input
-            .split('\n')
-            .map(|line| line.chars().map(|c| c == '#').collect::<Vec<_>>())
-            .collect::<Vec<_>>();
+        let obstructions = Grid2::parse(input, |line| line.chars().map(|c| c == '#').collect());
 
         let start_point = input.find('^').unwrap();
-        let start_point_x = start_point % (obstructions[0].len() + 1);
-        let start_point_y = start_point / (obstructions[0].len() + 1);
+        let start_point_x = start_point % (obstructions.width + 1);
+        let start_point_y = start_point / (obstructions.width + 1);
 
         Self {
             obstructions,
-            position: Point {
-                x: start_point_x as isize,
-                y: start_point_y as isize,
+            position: Vector2D {
+                x: start_point_x as i32,
+                y: start_point_y as i32,
             },
-            direction: Direction::Up,
+            direction: Direction::North,
         }
     }
 
-    fn contains_point(&self, point: Point) -> bool {
-        if point.x < 0 || point.x >= self.obstructions[0].len() as isize {
-            return false;
-        }
-
-        if point.y < 0 || point.y >= self.obstructions.len() as isize {
-            return false;
-        }
-
-        true
+    fn contains_point(&self, point: Vector2D<i32>) -> bool {
+        (0..self.obstructions.width as i32).contains(&point.x)
+            && (0..self.obstructions.height as i32).contains(&point.y)
     }
 
-    fn is_obstructed(&self, point: Point) -> bool {
-        if !self.contains_point(point) {
-            return false;
-        }
-
-        self.obstructions[point.y as usize][point.x as usize]
+    fn is_obstructed(&self, point: Vector2D<i32>) -> bool {
+        *self.obstructions.get::<i32>(point).unwrap_or(&false)
     }
 
-    fn add_obstruction(&mut self, point: Point) {
-        self.obstructions[point.y as usize][point.x as usize] = true;
+    fn add_obstruction(&mut self, point: Vector2D<i32>) {
+        self.obstructions.set::<i32>(point, true);
     }
 }
 
@@ -121,7 +59,7 @@ fn does_route_loop(input: &Map) -> bool {
         }
 
         loop {
-            let potential_new_point = current_point.in_direction(current_direction);
+            let potential_new_point = current_point + current_direction.into();
 
             if !input.is_obstructed(potential_new_point) {
                 current_point = potential_new_point;
@@ -135,7 +73,7 @@ fn does_route_loop(input: &Map) -> bool {
     false
 }
 
-fn positions(input: &Map) -> HashSet<Point> {
+fn positions(input: &Map) -> HashSet<Vector2D<i32>> {
     let mut current_point = input.position;
     let mut current_direction = input.direction;
 
@@ -145,7 +83,7 @@ fn positions(input: &Map) -> HashSet<Point> {
         visited_points.insert(current_point);
 
         loop {
-            let potential_new_point = current_point.in_direction(current_direction);
+            let potential_new_point = current_point + current_direction.into();
 
             if !input.is_obstructed(potential_new_point) {
                 current_point = potential_new_point;

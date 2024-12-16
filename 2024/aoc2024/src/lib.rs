@@ -163,6 +163,65 @@ pub fn extended_gcd(a: i64, b: i64) -> (i64, i64, i64) {
     (old_s, old_t, old_r)
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
+impl Direction {
+    pub fn parse(c: char) -> Option<Self> {
+        Some(match c {
+            '^' => Direction::North,
+            'v' => Direction::South,
+            '>' => Direction::East,
+            '<' => Direction::West,
+            _ => return None,
+        })
+    }
+
+    pub fn neighbours(self) -> [Self; 2] {
+        match self {
+            Direction::North | Direction::South => [Direction::East, Direction::West],
+            Direction::East | Direction::West => [Direction::North, Direction::South],
+        }
+    }
+
+    pub fn all() -> [Direction; 4] {
+        use Direction::*;
+        [North, East, South, West]
+    }
+
+    pub fn rotate_right(self) -> Self {
+        match self {
+            Direction::North => Direction::East,
+            Direction::East => Direction::South,
+            Direction::South => Direction::West,
+            Direction::West => Direction::North,
+        }
+    }
+}
+
+impl From<&Direction> for Vector2D<i32> {
+    fn from(value: &Direction) -> Self {
+        match value {
+            Direction::North => (0, -1),
+            Direction::East => (1, 0),
+            Direction::South => (0, 1),
+            Direction::West => (-1, 0),
+        }
+        .into()
+    }
+}
+
+impl From<Direction> for Vector2D<i32> {
+    fn from(value: Direction) -> Self {
+        Vector2D::from(&value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

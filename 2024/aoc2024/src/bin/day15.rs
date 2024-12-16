@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug};
 
-use aoc2024::{get_input, Grid2, Vector2D};
+use aoc2024::{get_input, Direction, Grid2, Vector2D};
 
 fn main() {
     let input = get_input(15);
@@ -33,38 +33,6 @@ impl Debug for Space2 {
             Space2::BoxR => write!(f, "]"),
             Space2::Empty => write!(f, "."),
         }
-    }
-}
-
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
-enum Direction {
-    North,
-    East,
-    South,
-    West,
-}
-
-impl Direction {
-    fn parse(c: char) -> Option<Self> {
-        Some(match c {
-            '^' => Direction::North,
-            '>' => Direction::East,
-            'v' => Direction::South,
-            '<' => Direction::West,
-            _ => return None,
-        })
-    }
-}
-
-impl From<&Direction> for Vector2D<i32> {
-    fn from(value: &Direction) -> Self {
-        match value {
-            Direction::North => (0, -1),
-            Direction::East => (1, 0),
-            Direction::South => (0, 1),
-            Direction::West => (-1, 0),
-        }
-        .into()
     }
 }
 

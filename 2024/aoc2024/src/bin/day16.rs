@@ -3,7 +3,7 @@ use std::{
     collections::{BinaryHeap, HashMap, HashSet},
 };
 
-use aoc2024::{get_input, Grid2, Vector2D};
+use aoc2024::{get_input, Direction, Grid2, Vector2D};
 
 fn main() {
     let input = get_input(16);
@@ -12,40 +12,6 @@ fn main() {
     println!("Part 2: {}", part2);
 
     // 582 too high, 523 too low
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-enum Direction {
-    North,
-    East,
-    South,
-    West,
-}
-
-impl Direction {
-    fn neighbours(self) -> [Self; 2] {
-        match self {
-            Direction::North | Direction::South => [Direction::East, Direction::West],
-            Direction::East | Direction::West => [Direction::North, Direction::South],
-        }
-    }
-
-    fn all() -> [Direction; 4] {
-        use Direction::*;
-        [North, East, South, West]
-    }
-}
-
-impl From<&Direction> for Vector2D<i32> {
-    fn from(value: &Direction) -> Self {
-        match value {
-            Direction::North => (0, -1),
-            Direction::East => (1, 0),
-            Direction::South => (0, 1),
-            Direction::West => (-1, 0),
-        }
-        .into()
-    }
 }
 
 fn reindeer_race(input: &str) -> (u32, usize) {
