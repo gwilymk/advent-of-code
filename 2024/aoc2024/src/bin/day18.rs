@@ -12,7 +12,7 @@ fn main() {
 
 fn part1(input: &str) -> usize {
     let ram = Ram::new(input, 71, 71);
-    ram.minimum_steps(1024)
+    ram.path_to_exit(1024).len()
 }
 
 struct Ram {
@@ -33,7 +33,7 @@ impl Ram {
         Self { map }
     }
 
-    fn minimum_steps(&self, max_value: usize) -> usize {
+    fn path_to_exit(&self, max_value: usize) -> Vec<Vector2D<i32>> {
         #[derive(Debug, Clone, PartialEq, Eq)]
         struct Node {
             distance: usize,
@@ -57,6 +57,8 @@ impl Ram {
         let mut q = BinaryHeap::new();
         let mut distance: HashMap<Vector2D<i32>, usize> = HashMap::new();
 
+        let mut previous: HashMap<Vector2D<i32>, Vector2D<i32>> = HashMap::new();
+
         q.push(Reverse(Node {
             distance: 0,
             point: start,
@@ -64,7 +66,7 @@ impl Ram {
 
         while let Some(Reverse(minimum)) = q.pop() {
             if minimum.point == end {
-                return minimum.distance;
+                break;
             }
 
             for (&neighbour_value, neighbour_point) in
@@ -79,6 +81,7 @@ impl Ram {
 
                 let current_distance = *distance.get(&neighbour_point).unwrap_or(&usize::MAX);
                 if neighbour_distance < current_distance {
+                    previous.insert(neighbour_point, minimum.point);
                     distance.insert(neighbour_point, neighbour_distance);
                     q.push(Reverse(Node {
                         distance: neighbour_distance,
@@ -88,7 +91,12 @@ impl Ram {
             }
         }
 
-        panic!("Could not get to the end")
+        let mut result = vec![end];
+        while result[result.len() - 1] != start {
+            result.push(previous[&result[result.len() - 1]]);
+        }
+
+        result
     }
 }
 
@@ -122,5 +130,5 @@ fn given_input() {
 
     let ram = Ram::new(input, 7, 7);
 
-    assert_eq!(ram.minimum_steps(12), 22);
+    assert_eq!(ram.path_to_exit(12).len() - 1, 22);
 }
