@@ -1,6 +1,6 @@
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap},
+    collections::{BinaryHeap, HashMap, HashSet},
 };
 
 use aoc2024::{get_input, Grid2, Vector2D};
@@ -8,11 +8,45 @@ use aoc2024::{get_input, Grid2, Vector2D};
 fn main() {
     let input = get_input(18);
     println!("Part 1: {}", part1(&input));
+
+    let part2_value = part2(&input, 71, 71);
+    println!("Part 2: {},{}", part2_value.x, part2_value.y);
 }
 
 fn part1(input: &str) -> usize {
     let ram = Ram::new(input, 71, 71);
-    ram.path_to_exit(1024).len()
+    ram.path_to_exit(1024).unwrap().len()
+}
+
+fn part2(input: &str, width: usize, height: usize) -> Vector2D<i32> {
+    let fall_times = input
+        .split('\n')
+        .map(|line| {
+            let (x, y) = line.split_once(',').unwrap();
+            let x = x.parse::<i32>().unwrap();
+            let y = y.parse::<i32>().unwrap();
+
+            Vector2D::new(x, y)
+        })
+        .collect::<Vec<_>>();
+
+    let ram = Ram::new(input, width, height);
+    let mut current_time = 0;
+    'outer: while let Some(path) = ram.path_to_exit(current_time) {
+        // find the first time where this path will be blocked
+        let path_points: HashSet<Vector2D<i32>> = HashSet::from_iter(path.iter().copied());
+
+        for (time, fall_time) in fall_times.iter().enumerate().skip(current_time) {
+            if path_points.contains(fall_time) {
+                current_time = time + 1;
+                continue 'outer;
+            }
+        }
+
+        panic!("Path is never blocked")
+    }
+
+    fall_times[current_time - 1]
 }
 
 struct Ram {
@@ -33,7 +67,7 @@ impl Ram {
         Self { map }
     }
 
-    fn path_to_exit(&self, max_value: usize) -> Vec<Vector2D<i32>> {
+    fn path_to_exit(&self, max_value: usize) -> Option<Vec<Vector2D<i32>>> {
         #[derive(Debug, Clone, PartialEq, Eq)]
         struct Node {
             distance: usize,
@@ -66,7 +100,12 @@ impl Ram {
 
         while let Some(Reverse(minimum)) = q.pop() {
             if minimum.point == end {
-                break;
+                let mut result = vec![end];
+                while result[result.len() - 1] != start {
+                    result.push(previous[&result[result.len() - 1]]);
+                }
+
+                return Some(result);
             }
 
             for (&neighbour_value, neighbour_point) in
@@ -91,12 +130,7 @@ impl Ram {
             }
         }
 
-        let mut result = vec![end];
-        while result[result.len() - 1] != start {
-            result.push(previous[&result[result.len() - 1]]);
-        }
-
-        result
+        None
     }
 }
 
@@ -130,5 +164,7 @@ fn given_input() {
 
     let ram = Ram::new(input, 7, 7);
 
-    assert_eq!(ram.path_to_exit(12).len() - 1, 22);
+    assert_eq!(ram.path_to_exit(12).unwrap().len() - 1, 22);
+
+    assert_eq!(part2(input, 7, 7), Vector2D::new(6, 1));
 }
