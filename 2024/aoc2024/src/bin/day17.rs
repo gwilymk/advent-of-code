@@ -218,27 +218,6 @@ impl Machine {
         }
 
         None
-
-        // let mut remaining_output = self.program.clone();
-        // let mut current_a = 0;
-
-        // 'outer: while let Some(output) = remaining_output.pop() {
-        //     for potential_a in 0..8 {
-        //         self.a = current_a << 3 | potential_a;
-        //         self.b = 0;
-        //         self.c = 0;
-        //         self.pc = 0;
-
-        //         if Some(output) == self.until_out() {
-        //             current_a = (current_a << 3) | potential_a;
-        //             continue 'outer;
-        //         }
-        //     }
-
-        //     println!("Couldn't find for {output} with remaining {remaining_output:?}");
-        // }
-
-        // current_a
     }
 }
 
