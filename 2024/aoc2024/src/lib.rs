@@ -1,4 +1,4 @@
-use std::mem;
+use std::{iter, mem};
 
 pub use agb_fixnum::*;
 
@@ -109,6 +109,28 @@ impl<T> Grid2<T> {
                 .enumerate()
                 .map(move |(x, value)| (Vector2D::new(x as i32, y as i32), value))
         })
+    }
+}
+
+impl<T> Grid2<T>
+where
+    T: Default,
+{
+    pub fn new(width: usize, height: usize) -> Self {
+        Self::new_with(width, height, || T::default())
+    }
+
+    pub fn new_with(width: usize, height: usize, with: impl Fn() -> T) -> Self {
+        let mut map = Vec::with_capacity(height);
+        for _ in 0..height {
+            map.push(iter::repeat_with(&with).take(width).collect());
+        }
+
+        Self {
+            width,
+            height,
+            points: map,
+        }
     }
 }
 
