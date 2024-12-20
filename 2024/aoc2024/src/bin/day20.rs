@@ -5,9 +5,14 @@ use aoc2024::{get_input, Grid2, Vector2D};
 fn main() {
     let input = get_input(20);
     println!("Part 1: {}", part1(&input, 100));
+    println!("Part 2: {}", part2(&input, 100));
 }
 
-fn find_cheats(input: &str) -> HashMap<(Vector2D<i32>, Vector2D<i32>), usize> {
+fn find_cheats(
+    input: &str,
+    max_length: i32,
+    part_2_tracking: bool,
+) -> HashMap<(Vector2D<i32>, Vector2D<i32>), usize> {
     let maze = Grid2::parse(input, |line| line.chars().map(|c| c == '#').collect());
     let start = input.find('S').unwrap() as i32;
     let end = input.find('E').unwrap() as i32;
@@ -27,27 +32,38 @@ fn find_cheats(input: &str) -> HashMap<(Vector2D<i32>, Vector2D<i32>), usize> {
             continue;
         }
 
-        for (&first_cheat_cost, first_cheat_point) in
-            maze_costs.neighbours_with_points::<i32>(point, false)
-        {
-            if first_cheat_cost != usize::MAX {
-                continue;
-            }
+        for x_diff in -max_length..=max_length {
+            for y_diff in -max_length..=max_length {
+                let diff = Vector2D::new(x_diff, y_diff);
 
-            for (&second_cheat_cost, second_cheat_point) in
-                maze_costs.neighbours_with_points::<i32>(first_cheat_point, false)
-            {
+                if diff.manhattan_distance() > max_length {
+                    continue;
+                }
+
+                let second_cheat_point = point + diff;
+                let Some(&second_cheat_cost) = maze_costs.get::<i32>(second_cheat_point) else {
+                    continue;
+                };
+
                 if second_cheat_cost == usize::MAX {
                     continue;
                 }
 
-                if second_cheat_cost > cheat_start_cost + 2 {
+                if second_cheat_cost > cheat_start_cost + diff.manhattan_distance() as usize {
                     result.insert(
-                        (first_cheat_point, second_cheat_point),
-                        second_cheat_cost - cheat_start_cost - 2,
+                        (
+                            if part_2_tracking {
+                                point
+                            } else {
+                                (point + second_cheat_point) / 2
+                            },
+                            second_cheat_point,
+                        ),
+                        second_cheat_cost - cheat_start_cost - diff.manhattan_distance() as usize,
                     );
                 }
             }
+            // }
         }
     }
 
@@ -80,7 +96,28 @@ fn calculate_costs(maze: &Grid2<bool>, start: Vector2D<i32>, end: Vector2D<i32>)
 }
 
 fn part1(input: &str, threshold: usize) -> usize {
-    let cheats = find_cheats(input);
+    let cheats = find_cheats(input, 2, false);
+
+    cheats
+        .iter()
+        .filter(|(_, amount)| **amount >= threshold)
+        .count()
+}
+
+fn part2(input: &str, threshold: usize) -> usize {
+    let cheats = find_cheats(input, 20, true);
+
+    let mut amounts: HashMap<usize, usize> = HashMap::new();
+    for &amount in cheats.values() {
+        if amount < threshold {
+            continue;
+        }
+
+        *amounts.entry(amount).or_default() += 1;
+    }
+    let mut amounts: Vec<(usize, usize)> = amounts.into_iter().collect::<Vec<_>>();
+    amounts.sort();
+    println!("{amounts:#?}");
 
     cheats
         .iter()
@@ -107,4 +144,8 @@ fn given_input() {
 ###############";
 
     assert_eq!(part1(input, 20), 5);
+    assert_eq!(
+        part2(input, 50),
+        32 + 31 + 29 + 39 + 25 + 23 + 20 + 19 + 12 + 14 + 12 + 22 + 4 + 3
+    );
 }
