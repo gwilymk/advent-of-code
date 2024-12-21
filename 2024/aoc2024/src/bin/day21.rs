@@ -58,81 +58,195 @@ fn dpad_coordinate(instr: DpadInstruction) -> Vector2D<i32> {
     .into()
 }
 
-// prefers going up and right first
-fn keypad_sequence(code: &str) -> Vec<DpadInstruction> {
-    let mut result = vec![];
+fn keypad_sequence(code: &str) -> Vec<Vec<Vec<DpadInstruction>>> {
+    let mut results = vec![];
     let mut current_coordinate = keypad_coordinate('A');
 
     for c in code.chars() {
         let new_coordinate = keypad_coordinate(c);
+        let mut chunk = vec![];
 
-        result.extend(iter::repeat_n(
-            DpadInstruction::Direction(Direction::North),
-            (current_coordinate.y - new_coordinate.y).max(0) as usize,
-        ));
+        if new_coordinate.y != 2 && current_coordinate.y != 2 {
+            // offer the other way too
 
-        result.extend(iter::repeat_n(
-            DpadInstruction::Direction(Direction::East),
-            (new_coordinate.x - current_coordinate.x).max(0) as usize,
-        ));
+            let mut result = vec![];
 
-        result.extend(iter::repeat_n(
-            DpadInstruction::Direction(Direction::South),
-            (new_coordinate.y - current_coordinate.y).max(0) as usize,
-        ));
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::South),
+                (new_coordinate.y - current_coordinate.y).max(0) as usize,
+            ));
 
-        result.extend(iter::repeat_n(
-            DpadInstruction::Direction(Direction::West),
-            (current_coordinate.x - new_coordinate.x).max(0) as usize,
-        ));
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::West),
+                (current_coordinate.x - new_coordinate.x).max(0) as usize,
+            ));
 
-        result.push(DpadInstruction::A);
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::North),
+                (current_coordinate.y - new_coordinate.y).max(0) as usize,
+            ));
 
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::East),
+                (new_coordinate.x - current_coordinate.x).max(0) as usize,
+            ));
+
+            result.push(DpadInstruction::A);
+
+            chunk.push(result);
+        }
+
+        {
+            let mut result = vec![];
+
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::North),
+                (current_coordinate.y - new_coordinate.y).max(0) as usize,
+            ));
+
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::East),
+                (new_coordinate.x - current_coordinate.x).max(0) as usize,
+            ));
+
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::South),
+                (new_coordinate.y - current_coordinate.y).max(0) as usize,
+            ));
+
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::West),
+                (current_coordinate.x - new_coordinate.x).max(0) as usize,
+            ));
+
+            result.push(DpadInstruction::A);
+
+            chunk.push(result);
+        }
+
+        results.push(chunk);
         current_coordinate = new_coordinate;
     }
 
-    result
+    results
 }
 
 // goes right down first
-fn dpad_sequence(sequence: &[DpadInstruction]) -> Vec<DpadInstruction> {
-    let mut result = vec![];
+fn dpad_sequence(sequence: &[DpadInstruction]) -> Vec<Vec<Vec<DpadInstruction>>> {
+    let mut results = vec![];
     let mut current_coordinate = dpad_coordinate(DpadInstruction::A);
 
     for &instr in sequence {
         let new_coordinate = dpad_coordinate(instr);
+        let mut chunk = vec![];
 
-        result.extend(iter::repeat_n(
-            DpadInstruction::Direction(Direction::East),
-            (new_coordinate.x - current_coordinate.x).max(0) as usize,
-        ));
+        if current_coordinate.x != 0 && new_coordinate.x != 0 {
+            let mut result = vec![];
 
-        result.extend(iter::repeat_n(
-            DpadInstruction::Direction(Direction::South),
-            (new_coordinate.y - current_coordinate.y).max(0) as usize,
-        ));
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::North),
+                (current_coordinate.y - new_coordinate.y).max(0) as usize,
+            ));
 
-        result.extend(iter::repeat_n(
-            DpadInstruction::Direction(Direction::North),
-            (current_coordinate.y - new_coordinate.y).max(0) as usize,
-        ));
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::West),
+                (current_coordinate.x - new_coordinate.x).max(0) as usize,
+            ));
 
-        result.extend(iter::repeat_n(
-            DpadInstruction::Direction(Direction::West),
-            (current_coordinate.x - new_coordinate.x).max(0) as usize,
-        ));
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::East),
+                (new_coordinate.x - current_coordinate.x).max(0) as usize,
+            ));
 
-        result.push(DpadInstruction::A);
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::South),
+                (new_coordinate.y - current_coordinate.y).max(0) as usize,
+            ));
+
+            result.push(DpadInstruction::A);
+
+            chunk.push(result);
+        }
+
+        {
+            let mut result = vec![];
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::East),
+                (new_coordinate.x - current_coordinate.x).max(0) as usize,
+            ));
+
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::South),
+                (new_coordinate.y - current_coordinate.y).max(0) as usize,
+            ));
+
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::North),
+                (current_coordinate.y - new_coordinate.y).max(0) as usize,
+            ));
+
+            result.extend(iter::repeat_n(
+                DpadInstruction::Direction(Direction::West),
+                (current_coordinate.x - new_coordinate.x).max(0) as usize,
+            ));
+
+            result.push(DpadInstruction::A);
+
+            chunk.push(result);
+        }
+
+        results.push(chunk);
         current_coordinate = new_coordinate;
     }
 
-    result
+    results
 }
 
 fn part1_line(input: &str) -> String {
     let keypad_input = keypad_sequence(input);
-    let dpad1 = dpad_sequence(&keypad_input);
-    let dpad2 = dpad_sequence(&dpad1);
+
+    let dpad2 = keypad_input
+        .iter()
+        .flat_map(|section| {
+            let dpad1_options = section.iter().map(|chunk| dpad_sequence(chunk));
+
+            let dpad2_options = dpad1_options
+                .flat_map(|dpad1_option| {
+                    dpad1_option
+                        .iter()
+                        .flat_map(|dpad1_chunk_options| {
+                            dpad1_chunk_options
+                                .iter()
+                                .map(|dpad1_chunk_option| {
+                                    let dpad2_options = dpad_sequence(dpad1_chunk_option);
+                                    dpad2_options
+                                        .iter()
+                                        .flat_map(|dpad2_options| {
+                                            dpad2_options
+                                                .iter()
+                                                .min_by_key(|option| option.len())
+                                                .unwrap()
+                                        })
+                                        .copied()
+                                        .collect::<Vec<_>>()
+                                })
+                                .min_by_key(|dpad2_option| dpad2_option.len())
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>();
+
+            dpad2_options.into_iter().min_by_key(|o| o.len()).unwrap()
+        })
+        .collect::<Vec<_>>();
+
+    println!("{input}");
+
+    println!(
+        "dpad2:  {}",
+        dpad2.iter().copied().map(char::from).collect::<String>()
+    );
+    println!("==========");
 
     dpad2.into_iter().map(char::from).collect()
 }
@@ -140,10 +254,8 @@ fn part1_line(input: &str) -> String {
 fn part1(input: &str) -> usize {
     input
         .split('\n')
-        .map(|line| {
-            let keypad_input = keypad_sequence(line);
-            let dpad1 = dpad_sequence(&keypad_input);
-            let dpad2 = dpad_sequence(&dpad1);
+        .map(|line: &str| {
+            let dpad2 = part1_line(input);
 
             let number = line[..line.len() - 1].parse::<usize>().unwrap();
 
@@ -154,23 +266,6 @@ fn part1(input: &str) -> usize {
 
 #[test]
 fn given_input() {
-    let sequence = keypad_sequence("029A");
-    let sequence_out = sequence.iter().copied().map(char::from).collect::<String>();
-
-    assert_eq!(sequence_out, "<A^A^^>AvvvA");
-
-    let dpad_sequence = dpad_sequence(&sequence);
-    let dpad_sequence_out = dpad_sequence
-        .iter()
-        .copied()
-        .map(char::from)
-        .collect::<String>();
-
-    assert_eq!(
-        dpad_sequence_out.len(),
-        "v<<A>>^A<A>AvA<^AA>A<vAAA>^A".len()
-    );
-
     assert_eq!(
         part1_line("029A").len(),
         "<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A".len()
@@ -189,11 +284,6 @@ fn given_input() {
     assert_eq!(
         part1_line("456A").len(),
         "<v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A".len()
-    );
-
-    println!(
-        "{}\n<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A",
-        part1_line("379A")
     );
 
     assert_eq!(
