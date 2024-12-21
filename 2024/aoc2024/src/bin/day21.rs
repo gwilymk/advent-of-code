@@ -1,5 +1,3 @@
-use std::iter;
-
 use aoc2024::{get_input, Direction, Vector2D};
 
 fn main() {
@@ -25,7 +23,24 @@ fn keypad_coordinate(number: char) -> Vector2D<i32> {
     .into()
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+fn keypad_from_coordinate(coord: Vector2D<i32>) -> Option<char> {
+    Some(match (coord.x, coord.y) {
+        (0, 0) => '7',
+        (1, 0) => '8',
+        (2, 0) => '9',
+        (0, 1) => '4',
+        (1, 1) => '5',
+        (2, 1) => '6',
+        (0, 2) => '1',
+        (1, 2) => '2',
+        (2, 2) => '3',
+        (1, 3) => '0',
+        (2, 3) => 'A',
+        _ => return None,
+    })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum DpadInstruction {
     A,
     Direction(Direction),
@@ -58,197 +73,86 @@ fn dpad_coordinate(instr: DpadInstruction) -> Vector2D<i32> {
     .into()
 }
 
-fn keypad_sequence(code: &str) -> Vec<Vec<Vec<DpadInstruction>>> {
-    let mut results = vec![];
-    let mut current_coordinate = keypad_coordinate('A');
+fn dpad_from_coordinate(coord: Vector2D<i32>) -> DpadInstruction {}
 
-    for c in code.chars() {
-        let new_coordinate = keypad_coordinate(c);
-        let mut chunk = vec![];
-
-        if new_coordinate.y != 2 && current_coordinate.y != 2 {
-            // offer the other way too
-
-            let mut result = vec![];
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::South),
-                (new_coordinate.y - current_coordinate.y).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::West),
-                (current_coordinate.x - new_coordinate.x).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::North),
-                (current_coordinate.y - new_coordinate.y).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::East),
-                (new_coordinate.x - current_coordinate.x).max(0) as usize,
-            ));
-
-            result.push(DpadInstruction::A);
-
-            chunk.push(result);
-        }
-
-        {
-            let mut result = vec![];
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::North),
-                (current_coordinate.y - new_coordinate.y).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::East),
-                (new_coordinate.x - current_coordinate.x).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::South),
-                (new_coordinate.y - current_coordinate.y).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::West),
-                (current_coordinate.x - new_coordinate.x).max(0) as usize,
-            ));
-
-            result.push(DpadInstruction::A);
-
-            chunk.push(result);
-        }
-
-        results.push(chunk);
-        current_coordinate = new_coordinate;
+impl DpadInstruction {
+    fn all() -> [DpadInstruction; 5] {
+        [
+            DpadInstruction::A,
+            DpadInstruction::Direction(Direction::North),
+            DpadInstruction::Direction(Direction::East),
+            DpadInstruction::Direction(Direction::South),
+            DpadInstruction::Direction(Direction::West),
+        ]
     }
 
-    results
-}
-
-// goes right down first
-fn dpad_sequence(sequence: &[DpadInstruction]) -> Vec<Vec<Vec<DpadInstruction>>> {
-    let mut results = vec![];
-    let mut current_coordinate = dpad_coordinate(DpadInstruction::A);
-
-    for &instr in sequence {
-        let new_coordinate = dpad_coordinate(instr);
-        let mut chunk = vec![];
-
-        if current_coordinate.x != 0 && new_coordinate.x != 0 {
-            let mut result = vec![];
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::North),
-                (current_coordinate.y - new_coordinate.y).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::West),
-                (current_coordinate.x - new_coordinate.x).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::East),
-                (new_coordinate.x - current_coordinate.x).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::South),
-                (new_coordinate.y - current_coordinate.y).max(0) as usize,
-            ));
-
-            result.push(DpadInstruction::A);
-
-            chunk.push(result);
+    fn apply(self, instruction: &mut DpadInstruction) -> Result<Option<DpadInstruction>, ()> {
+        match self {
+            DpadInstruction::A => Ok(Some(*instruction)),
+            DpadInstruction::Direction(direction) => {
+                *instruction = instruction.move_direction(direction).ok_or(())?;
+                Ok(None)
+            }
         }
-
-        {
-            let mut result = vec![];
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::East),
-                (new_coordinate.x - current_coordinate.x).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::South),
-                (new_coordinate.y - current_coordinate.y).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::North),
-                (current_coordinate.y - new_coordinate.y).max(0) as usize,
-            ));
-
-            result.extend(iter::repeat_n(
-                DpadInstruction::Direction(Direction::West),
-                (current_coordinate.x - new_coordinate.x).max(0) as usize,
-            ));
-
-            result.push(DpadInstruction::A);
-
-            chunk.push(result);
-        }
-
-        results.push(chunk);
-        current_coordinate = new_coordinate;
     }
 
-    results
+    fn move_direction(self, direction: Direction) -> Option<Self> {
+        Some(match direction {
+            Direction::North => match self {
+                DpadInstruction::Direction(Direction::South) => {
+                    DpadInstruction::Direction(Direction::North)
+                }
+                DpadInstruction::Direction(Direction::East) => DpadInstruction::A,
+                _ => return None,
+            },
+            Direction::East => match self {
+                DpadInstruction::A => DpadInstruction::Direction(Direction::North),
+                DpadInstruction::Direction(Direction::East) => {
+                    DpadInstruction::Direction(Direction::South)
+                }
+                DpadInstruction::Direction(Direction::South) => {
+                    DpadInstruction::Direction(Direction::West)
+                }
+                _ => return None,
+            },
+            Direction::South => match self {
+                DpadInstruction::A => DpadInstruction::Direction(Direction::East),
+                DpadInstruction::Direction(Direction::North) => {
+                    DpadInstruction::Direction(Direction::South)
+                }
+                _ => return None,
+            },
+            Direction::West => match self {
+                DpadInstruction::Direction(Direction::West) => {
+                    DpadInstruction::Direction(Direction::South)
+                }
+                DpadInstruction::Direction(Direction::South) => {
+                    DpadInstruction::Direction(Direction::East)
+                }
+                DpadInstruction::Direction(Direction::North) => DpadInstruction::A,
+                _ => return None,
+            },
+        })
+    }
 }
 
 fn part1_line(input: &str) -> String {
-    let keypad_input = keypad_sequence(input);
+    #[derive(Clone, PartialEq, Eq, Hash)]
+    struct State {
+        digits: usize,
 
-    let dpad2 = keypad_input
-        .iter()
-        .flat_map(|section| {
-            let dpad1_options = section.iter().map(|chunk| dpad_sequence(chunk));
+        keypad_arm: char,
+        dpad1_arm: DpadInstruction,
+        dpad2_arm: DpadInstruction,
+    }
 
-            let dpad2_options = dpad1_options
-                .flat_map(|dpad1_option| {
-                    dpad1_option
-                        .iter()
-                        .flat_map(|dpad1_chunk_options| {
-                            dpad1_chunk_options
-                                .iter()
-                                .map(|dpad1_chunk_option| {
-                                    let dpad2_options = dpad_sequence(dpad1_chunk_option);
-                                    dpad2_options
-                                        .iter()
-                                        .flat_map(|dpad2_options| {
-                                            dpad2_options
-                                                .iter()
-                                                .min_by_key(|option| option.len())
-                                                .unwrap()
-                                        })
-                                        .copied()
-                                        .collect::<Vec<_>>()
-                                })
-                                .min_by_key(|dpad2_option| dpad2_option.len())
-                        })
-                        .collect::<Vec<_>>()
-                })
-                .collect::<Vec<_>>();
+    impl State {
+        fn neighbours(&self) -> Vec<State> {
+            let mut neighbours = vec![];
 
-            dpad2_options.into_iter().min_by_key(|o| o.len()).unwrap()
-        })
-        .collect::<Vec<_>>();
-
-    println!("{input}");
-
-    println!(
-        "dpad2:  {}",
-        dpad2.iter().copied().map(char::from).collect::<String>()
-    );
-    println!("==========");
-
-    dpad2.into_iter().map(char::from).collect()
+            // for
+        }
+    }
 }
 
 fn part1(input: &str) -> usize {
