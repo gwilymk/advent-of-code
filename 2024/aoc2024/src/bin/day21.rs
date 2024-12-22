@@ -7,7 +7,8 @@ use aoc2024::{get_input, Direction, Vector2D};
 
 fn main() {
     let input = get_input(21);
-    println!("Part 1: {}", part1(&input)); // 295616 too high
+    println!("Part 1: {}", part1::<2>(&input));
+    println!("Part 2: {}", part1::<25>(&input));
 }
 
 fn keypad_coordinate(number: char) -> Vector2D<i32> {
@@ -117,43 +118,54 @@ impl DpadInstruction {
     }
 }
 
-fn part1_line(input: &str) -> usize {
+fn part1_line<const N: usize>(input: &str) -> usize {
     #[derive(Clone, PartialEq, Eq, Debug)]
-    struct Node {
+    struct Node<const N: usize> {
         distance: usize,
-        state: State,
+        state: State<N>,
     }
 
-    impl Ord for Node {
+    impl<const N: usize> Ord for Node<N> {
         fn cmp(&self, other: &Self) -> std::cmp::Ordering {
             self.distance.cmp(&other.distance)
         }
     }
 
-    impl PartialOrd for Node {
+    impl<const N: usize> PartialOrd for Node<N> {
         fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
             Some(self.cmp(other))
         }
     }
 
     let mut q = BinaryHeap::new();
-    let mut distance: HashMap<State, usize> = HashMap::new();
+    let mut distance: HashMap<State<N>, usize> = HashMap::new();
 
     q.push(Reverse(Node {
         distance: 0,
         state: State {
             digits: 0,
             keypad_arm: 'A',
-            dpad1_arm: DpadInstruction::A,
-            dpad2_arm: DpadInstruction::A,
+            arms: [DpadInstruction::A; N],
         },
     }));
 
     let input = input.chars().collect::<Vec<_>>();
+    let mut iterations = 0;
 
     while let Some(Reverse(minimum)) = q.pop() {
+        iterations += 1;
         if minimum.state.digits == input.len() {
             return minimum.distance;
+        }
+
+        if iterations % 100_000 == 0 {
+            println!(
+                "{iterations} - queue length: {}, digits: {}, distance: {}, states: {}",
+                q.len(),
+                minimum.state.digits,
+                minimum.distance,
+                distance.len(),
+            );
         }
 
         for neighbour in minimum.state.neighbours(&input) {
@@ -174,50 +186,53 @@ fn part1_line(input: &str) -> usize {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct State {
+struct State<const N: usize> {
     digits: usize,
 
     keypad_arm: char,
-    dpad1_arm: DpadInstruction,
-    dpad2_arm: DpadInstruction,
+    arms: [DpadInstruction; N],
 }
 
-impl State {
-    fn neighbours(&self, input: &[char]) -> Vec<State> {
+impl<const N: usize> State<N> {
+    fn neighbours(&self, input: &[char]) -> Vec<State<N>> {
         let mut neighbours = vec![];
 
-        for instr in DpadInstruction::all() {
+        'outer: for mut instr in DpadInstruction::all() {
             let mut working = self.clone();
 
-            match instr.apply(&mut working.dpad2_arm) {
-                Err(_) => continue,
-                Ok(None) => {}
-                Ok(Some(instr2)) => {
-                    match instr2.apply(&mut working.dpad1_arm) {
-                        Err(_) => continue,
-                        Ok(None) => {}
-                        Ok(Some(instr2)) => {
-                            match instr2 {
-                                DpadInstruction::A => {
-                                    // dpad2 is having the A button pressed, so extend the digits
-                                    let current_digit = working.keypad_arm;
-                                    if current_digit == input[working.digits] {
-                                        working.digits += 1;
-                                    } else {
-                                        continue; // invalid
-                                    }
-                                }
-                                DpadInstruction::Direction(direction) => {
-                                    let keypad_place = keypad_coordinate(working.keypad_arm);
-                                    if let Some(new_place) =
-                                        keypad_from_coordinate(keypad_place + direction.into())
-                                    {
-                                        working.keypad_arm = new_place;
-                                    } else {
-                                        continue;
-                                    }
-                                }
-                            }
+            let mut should_do_keypad = true;
+            for arm in &mut working.arms {
+                match instr.apply(arm) {
+                    Err(_) => continue 'outer,
+                    Ok(None) => {
+                        should_do_keypad = false;
+                        break;
+                    }
+                    Ok(Some(next_instr)) => {
+                        instr = next_instr;
+                    }
+                }
+            }
+
+            if should_do_keypad {
+                match instr {
+                    DpadInstruction::A => {
+                        // dpad2 is having the A button pressed, so extend the digits
+                        let current_digit = working.keypad_arm;
+                        if current_digit == input[working.digits] {
+                            working.digits += 1;
+                        } else {
+                            continue; // invalid
+                        }
+                    }
+                    DpadInstruction::Direction(direction) => {
+                        let keypad_place = keypad_coordinate(working.keypad_arm);
+                        if let Some(new_place) =
+                            keypad_from_coordinate(keypad_place + direction.into())
+                        {
+                            working.keypad_arm = new_place;
+                        } else {
+                            continue;
                         }
                     }
                 }
@@ -230,11 +245,11 @@ impl State {
     }
 }
 
-fn part1(input: &str) -> usize {
+fn part1<const N: usize>(input: &str) -> usize {
     input
         .split('\n')
         .map(|line: &str| {
-            let dpad2 = part1_line(line);
+            let dpad2 = part1_line::<N>(line);
 
             let number = line[..line.len() - 1].parse::<usize>().unwrap();
 
@@ -246,32 +261,32 @@ fn part1(input: &str) -> usize {
 #[test]
 fn given_input() {
     assert_eq!(
-        part1_line("029A"),
+        part1_line::<2>("029A"),
         "<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A".len()
     );
 
     assert_eq!(
-        part1_line("980A"),
+        part1_line::<2>("980A"),
         "<v<A>>^AAAvA^A<vA<AA>>^AvAA<^A>A<v<A>A>^AAAvA<^A>A<vA>^A<A>A".len()
     );
 
     assert_eq!(
-        part1_line("179A"),
+        part1_line::<2>("179A"),
         "<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A".len()
     );
 
     assert_eq!(
-        part1_line("456A"),
+        part1_line::<2>("456A"),
         "<v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A".len()
     );
 
     assert_eq!(
-        part1_line("379A"),
+        part1_line::<2>("379A"),
         "<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A".len()
     );
 
     assert_eq!(
-        part1(
+        part1::<2>(
             "029A
 980A
 179A
