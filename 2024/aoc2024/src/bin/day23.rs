@@ -1,10 +1,12 @@
 use std::collections::{HashMap, HashSet};
 
 use aoc2024::{get_input, AllPairsExt};
+use itertools::Itertools;
 
 fn main() {
     let input = get_input(23);
     println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 struct Graph {
@@ -81,6 +83,59 @@ fn part1(input: &str) -> usize {
     count / 3
 }
 
+fn part2(input: &str) -> String {
+    let graph = parse_graph(input);
+    let cliques = bron_kerbosch(
+        &graph,
+        HashSet::new(),
+        (0..graph.nodes.len()).collect(),
+        HashSet::new(),
+    );
+
+    let max_clique = cliques.iter().max_by_key(|clique| clique.len()).unwrap();
+
+    max_clique
+        .iter()
+        .map(|&n| graph.nodes[n].as_str())
+        .sorted()
+        .join(",")
+}
+
+fn bron_kerbosch(
+    graph: &Graph,
+    r: HashSet<usize>,
+    p: HashSet<usize>,
+    x: HashSet<usize>,
+) -> Vec<HashSet<usize>> {
+    if p.is_empty() && x.is_empty() {
+        return vec![r];
+    }
+
+    let mut new_p = p.clone();
+    let mut new_x = x.clone();
+
+    let mut result = vec![];
+
+    for &v in &p {
+        let neighbours = &graph.connections[v];
+
+        result.extend({
+            let mut temp_r = r.clone();
+            temp_r.insert(v);
+
+            let temp_p = new_p.intersection(neighbours).copied().collect();
+            let temp_x = new_x.intersection(neighbours).copied().collect();
+
+            bron_kerbosch(graph, temp_r, temp_p, temp_x)
+        });
+
+        new_p.remove(&v);
+        new_x.insert(v);
+    }
+
+    result
+}
+
 #[test]
 fn given_input() {
     let input = "kh-tc
@@ -117,4 +172,6 @@ tb-vc
 td-yn";
 
     assert_eq!(part1(input), 7);
+
+    assert_eq!(part2(input), "co,de,ka,ta");
 }
