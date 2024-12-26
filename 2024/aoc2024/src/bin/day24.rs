@@ -66,6 +66,36 @@ impl<'a> System<'a> {
 
         Self { gates }
     }
+
+    fn execute(&self, mut values: HashMap<&'a str, bool>) -> u64 {
+        loop {
+            let mut did_something = false;
+
+            for gate in &self.gates {
+                let input1 = values.get(gate.input1).copied();
+                let input2 = values.get(gate.input2).copied();
+                let output = values.get(gate.output).copied();
+
+                if let (Some(input1), Some(input2), None) = (input1, input2, output) {
+                    values.insert(gate.output, gate.gate.apply(input1, input2));
+                    did_something = true;
+                }
+            }
+
+            if !did_something {
+                break;
+            }
+        }
+
+        // collect all the z's
+        values
+            .into_iter()
+            .filter(|(k, _)| k.starts_with('z'))
+            .sorted_by_key(|kv| Reverse(kv.0))
+            .fold(0u64, |curr, (_, next)| {
+                (curr << 1) | if next { 1 } else { 0 }
+            })
+    }
 }
 
 fn part1(input: &str) -> u64 {
@@ -79,35 +109,8 @@ fn part1(input: &str) -> u64 {
     }
 
     let system = System::parse(input);
-    let gates = &system.gates;
 
-    loop {
-        let mut did_something = false;
-
-        for gate in gates {
-            let input1 = values.get(gate.input1).copied();
-            let input2 = values.get(gate.input2).copied();
-            let output = values.get(gate.output).copied();
-
-            if let (Some(input1), Some(input2), None) = (input1, input2, output) {
-                values.insert(gate.output, gate.gate.apply(input1, input2));
-                did_something = true;
-            }
-        }
-
-        if !did_something {
-            break;
-        }
-    }
-
-    // collect all the z's
-    values
-        .into_iter()
-        .filter(|(k, _)| k.starts_with('z'))
-        .sorted_by_key(|kv| Reverse(kv.0))
-        .fold(0u64, |curr, (_, next)| {
-            (curr << 1) | if next { 1 } else { 0 }
-        })
+    system.execute(values)
 }
 
 #[test]
