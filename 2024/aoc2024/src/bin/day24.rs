@@ -25,50 +25,66 @@ impl Gate {
     }
 }
 
-fn part1(input: &str) -> u64 {
-    struct Connection<'a> {
-        input1: &'a str,
-        input2: &'a str,
-        gate: Gate,
-        output: &'a str,
-    }
+struct Connection<'a> {
+    input1: &'a str,
+    input2: &'a str,
+    gate: Gate,
+    output: &'a str,
+}
 
+struct System<'a> {
+    gates: Vec<Connection<'a>>,
+}
+
+impl<'a> System<'a> {
+    fn parse(input: &'a str) -> Self {
+        let (_, gates) = input.split_once("\n\n").unwrap();
+
+        let gate_regex = regex::Regex::new("(\\w+) (XOR|OR|AND) (\\w+) -> (\\w+)").unwrap();
+
+        let gates = gates
+            .split('\n')
+            .map(|gate| {
+                let (_, [first, gate, second, output]) =
+                    gate_regex.captures(gate).unwrap().extract();
+
+                let gate = match gate {
+                    "AND" => Gate::And,
+                    "OR" => Gate::Or,
+                    "XOR" => Gate::Xor,
+                    _ => panic!("Unknown gate {gate}"),
+                };
+
+                Connection {
+                    input1: first,
+                    input2: second,
+                    gate,
+                    output,
+                }
+            })
+            .collect();
+
+        Self { gates }
+    }
+}
+
+fn part1(input: &str) -> u64 {
     let mut values: HashMap<&str, bool> = HashMap::new();
 
-    let (starts, gates) = input.split_once("\n\n").unwrap();
+    let (starts, _) = input.split_once("\n\n").unwrap();
     for start in starts.split('\n') {
         let (name, value) = start.split_once(": ").unwrap();
 
         values.insert(name, value == "1");
     }
 
-    let gate_regex = regex::Regex::new("(\\w+) (XOR|OR|AND) (\\w+) -> (\\w+)").unwrap();
-
-    let gates = gates
-        .split('\n')
-        .map(|gate| {
-            let (_, [first, gate, second, output]) = gate_regex.captures(gate).unwrap().extract();
-
-            let gate = match gate {
-                "AND" => Gate::And,
-                "OR" => Gate::Or,
-                "XOR" => Gate::Xor,
-                _ => panic!("Unknown gate {gate}"),
-            };
-
-            Connection {
-                input1: first,
-                input2: second,
-                gate,
-                output,
-            }
-        })
-        .collect::<Vec<_>>();
+    let system = System::parse(input);
+    let gates = &system.gates;
 
     loop {
         let mut did_something = false;
 
-        for gate in &gates {
+        for gate in gates {
             let input1 = values.get(gate.input1).copied();
             let input2 = values.get(gate.input2).copied();
             let output = values.get(gate.output).copied();
