@@ -61,7 +61,6 @@ dependencies = [
  "anyhow",
  "enumn",
  "itertools 0.13.0",
- "rand",
  "regex",
  "reqwest",
 ]
