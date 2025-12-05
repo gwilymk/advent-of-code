@@ -49,28 +49,29 @@ fn invalid_in_range(start: u64, end: u64) -> u64 {
 }
 
 fn invalid_in_range2(start: u64, end: u64) -> u64 {
-    let mut sum = 0;
+    (start..=end)
+        .filter(|&value| is_probably_invalid2(value))
+        .sum()
+}
 
-    'next_range: for value in start..=end {
-        let value_str = value.to_string();
-        'outer: for i in 1..=(value_str.len() / 2) {
-            if !value_str.len().is_multiple_of(i) {
-                continue;
-            }
-
-            let test = &value_str[0..i];
-            for j in 1..(value_str.len() / i) {
-                if &value_str[j * i..(j + 1) * i] != test {
-                    continue 'outer;
-                }
-            }
-
-            sum += value;
-            continue 'next_range;
+fn is_probably_invalid2(value: u64) -> bool {
+    let value_str = value.to_string();
+    'outer: for i in 1..=(value_str.len() / 2) {
+        if !value_str.len().is_multiple_of(i) {
+            continue;
         }
+
+        let test = &value_str[0..i];
+        for j in 1..(value_str.len() / i) {
+            if &value_str[j * i..(j + 1) * i] != test {
+                continue 'outer;
+            }
+        }
+
+        return true;
     }
 
-    sum
+    false
 }
 
 #[cfg(test)]
