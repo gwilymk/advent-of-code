@@ -28,6 +28,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "agb_fixnum"
+version = "0.22.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eaa29d0b2e57cd7923b26b359d8893bc852d1ffb3188c924736364c2d5265a1e"
+dependencies = [
+ "const_soft_float",
+ "num-traits",
+ "quote",
+]
+
+[[package]]
 name = "agb_macros"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -57,7 +68,7 @@ checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 name = "aoc2024"
 version = "0.1.0"
 dependencies = [
- "agb_fixnum",
+ "agb_fixnum 0.21.1",
  "anyhow",
  "enumn",
  "itertools 0.13.0",
@@ -69,6 +80,7 @@ dependencies = [
 name = "aoc2025"
 version = "0.1.0"
 dependencies = [
+ "agb_fixnum 0.22.6",
  "anyhow",
  "reqwest",
 ]
@@ -148,6 +160,12 @@ dependencies = [
  "lazy_static",
  "windows-sys 0.48.0",
 ]
+
+[[package]]
+name = "const_soft_float"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87ca1caa64ef4ed453e68bb3db612e51cf1b2f5b871337f0fcab1c8f87cc3dff"
 
 [[package]]
 name = "core-foundation"
