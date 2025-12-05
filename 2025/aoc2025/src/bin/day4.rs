@@ -28,7 +28,7 @@ fn part2(mut input: Grid2<bool>) -> usize {
     }
 }
 
-// returns the items which were removed
+// returns the number of items which were removed
 fn remove_accessible(input: &mut Grid2<bool>) -> usize {
     let accessible = accessible(input).collect::<Vec<_>>();
     let count = accessible.len();
