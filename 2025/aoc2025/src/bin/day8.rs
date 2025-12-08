@@ -14,55 +14,7 @@ fn main() {
 }
 
 fn part1(sorted_pairs: &[(usize, usize)], connections: usize) -> usize {
-    // map id to the circuit it's in
-    let mut node_to_circuit = HashMap::new();
-    let mut next_circuit_id = 0usize;
-
-    let mut circuits: HashMap<usize, HashSet<_>> = HashMap::new();
-
-    for &(a, b) in sorted_pairs.iter().take(connections) {
-        let circuit_a = node_to_circuit.get(&a).copied();
-        let circuit_b = node_to_circuit.get(&b).copied();
-
-        match (circuit_a, circuit_b) {
-            (None, None) => {
-                node_to_circuit.insert(a, next_circuit_id);
-                node_to_circuit.insert(b, next_circuit_id);
-                let c = circuits.entry(next_circuit_id).or_default();
-                c.insert(a);
-                c.insert(b);
-
-                next_circuit_id += 1;
-            }
-            (Some(circuit_a), None) => {
-                node_to_circuit.insert(b, circuit_a);
-                circuits.entry(circuit_a).or_default().insert(b);
-            }
-            (None, Some(circuit_b)) => {
-                node_to_circuit.insert(a, circuit_b);
-                circuits.entry(circuit_b).or_default().insert(a);
-            }
-            (Some(circuit_a), Some(circuit_b)) => {
-                // need to combine these...
-                if circuit_a == circuit_b {
-                    continue;
-                }
-
-                let [Some(island_a), Some(island_b)] =
-                    circuits.get_disjoint_mut([&circuit_a, &circuit_b])
-                else {
-                    panic!("Couldn't find entries");
-                };
-
-                island_b.drain().for_each(|b_entry| {
-                    island_a.insert(b_entry);
-                    node_to_circuit.insert(b_entry, circuit_a);
-                });
-
-                circuits.remove(&circuit_b);
-            }
-        }
-    }
+    let circuits = build_circuits(&sorted_pairs[..connections], |_| false).unwrap();
 
     let mut island_sizes = circuits
         .values()
@@ -74,6 +26,20 @@ fn part1(sorted_pairs: &[(usize, usize)], connections: usize) -> usize {
 }
 
 fn part2(positions: &[[u64; 3]], sorted_pairs: &[(usize, usize)]) -> u64 {
+    let (a, b) = build_circuits(sorted_pairs, |circuits| {
+        circuits.len() == 1 && circuits.values().next().unwrap().len() == positions.len()
+    })
+    .unwrap_err();
+
+    positions[a][0] * positions[b][0]
+}
+
+// returns Err with the `a, b` combo that resulted in the early_exit_check failing
+// or Ok(circuit) if it fully builds
+fn build_circuits(
+    sorted_pairs: &[(usize, usize)],
+    early_exit_check: impl Fn(&HashMap<usize, HashSet<usize>>) -> bool,
+) -> Result<HashMap<usize, HashSet<usize>>, (usize, usize)> {
     // map id to the circuit it's in
     let mut node_to_circuit = HashMap::new();
     let mut next_circuit_id = 0usize;
@@ -123,13 +89,12 @@ fn part2(positions: &[[u64; 3]], sorted_pairs: &[(usize, usize)]) -> u64 {
             }
         }
 
-        if circuits.len() == 1 && circuits.values().next().unwrap().len() == positions.len() {
-            // this was the last one
-            return positions[a][0] * positions[b][0];
+        if early_exit_check(&circuits) {
+            return Err((a, b));
         }
     }
 
-    unreachable!("Never formed 1 circuit.... somehow");
+    Ok(circuits)
 }
 
 fn parse(input: &str) -> (Vec<[u64; 3]>, Vec<(usize, usize)>) {
